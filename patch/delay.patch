@@ -1,0 +1,26 @@
+diff --git a/sim/delays.c b/sim/delays.c
+index 6721c31..4bcd880 100644
+--- a/sim/delays.c
++++ b/sim/delays.c
+@@ -38,7 +38,7 @@
+ */
+ 
+ /* Delay storage size */
+-#define MAX_DELAY 1000
++#define MAX_DELAY 10000
+ 
+ 
+ /* -----------------------------------------------------------------------------
+diff --git a/sim/modelu.c b/sim/modelu.c
+index 96b9605..a884990 100644
+--- a/sim/modelu.c
++++ b/sim/modelu.c
+@@ -283,7 +283,7 @@ BOOL UpdateSpikes (PIFN pifn, PDOUBLE pdTnext, PDOUBLE pdTime)
+     if (*pdTime < rgT0s[j])
+       *pdTnext = rgT0s[j]; /* Time of upcoming spike */
+ 
+-    else if (*pdTime == rgT0s[j]) {
++    else if (*pdTime == rgT0s[j] || nextafter(*pdTime, rgT0s[j]) == rgT0s[j]) {
+       /* At a spike, return the time of the following spike */
+       pifn->bOn = TRUE;
+       if (j + 1 < pifn->nDoses)

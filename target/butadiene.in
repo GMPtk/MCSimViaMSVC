@@ -1,0 +1,16 @@
+Integrate (Lsodes, 1e-6, 1e-6, 1);
+
+Simulation {
+
+  BDW   = 86.2600;
+  height= 1.7400;
+  Sex   = 1;
+  Age   = 28;
+
+  C_inh = NDoses (2, 2, 0, 0, 20);
+
+  PrintStep(C_exh, 0, 58, 0.5);
+  PrintStep(C_art, 0, 58, 0.5);
+  PrintStep(C_ven, 0, 58, 0.5);
+
+}

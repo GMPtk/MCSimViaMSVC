@@ -5,24 +5,22 @@
 @set target=%~1
 
 @set vcvars=
+@set vsver=2019
 @set platform=32
-@set "VS2019=%ProgramFiles(x86)%\Microsoft Visual Studio\2019"
+@set "vsdir=%ProgramFiles(x86)%\Microsoft Visual Studio\%vsver%"
 
-@if exist "%VS2019%\BuildTools\VC\Auxiliary\Build\vcvars%platform%.bat" (
-  @set "vcvars=%VS2019%\BuildTools\VC\Auxiliary\Build\vcvars%platform%.bat"
-)
-
-@if "%vcvars%" == "" (
-  @if exist "%VS2019%\Enterprise\VC\Auxiliary\Build\vcvars%platform%.bat" (
-    @set "vcvars=%VS2019%\Enterprise\VC\Auxiliary\Build\vcvars%platform%.bat"
+@for /D %%M in ("%vsdir%\*") do @(
+  @if exist "%%M\VC\Auxiliary\Build\vcvars%platform%.bat" (
+    @set "vcvars=%%M\VC\Auxiliary\Build\vcvars%platform%.bat"
+    goto use_vcvars
   )
 )
 
-@if "%vcvars%" == "" (
-  @echo.
-  @echo Failed to initialize MS build tools
-  @exit /b 1
-)
+@echo.
+@echo Failed to initialize MS build tools
+@exit /b 1
+
+:use_vcvars
 
 @call "%vcvars%"
 
@@ -61,27 +59,30 @@
     @set targetDir=%%~dpi
   )
 
-  @if exist "!targetDir!!targetName!.c" (
-    @del "!targetDir!!targetName!.c"
+  @set "target_c=!targetDir!!targetName!.c"
+  @set "target_exe=!targetDir!!targetName!.exe"
+
+  @if exist "%target_c%" (
+    @del "%target_c%"
   )
 
-  "%MOD%" "%target%" "!targetDir!!targetName!.c"
+  "%MOD%" "%target%" "!target_c!"
 
-  @if not exist "!targetDir!!targetName!.c" (
+  @if not exist "!target_c!" (
     @exit /b 1
   )
 
-  @if exist "!targetDir!!targetName!.exe" (
-    @del "!targetDir!!targetName!.exe"
+  @if exist "!target_exe!" (
+    @del "!target_exe!"
   )
 
-  cl "%rootdir%sim\*.c" "!targetDir!!targetName!.c" gsl.lib /O2 /Fo:"%rootdir%sim\obj/" /Fe:"!targetDir!!targetName!.exe" /I"%rootdir%sim" /I"%rootdir%sim\gsl-2.7" /link /LIBPATH:"%rootdir%sim\gsl-2.7\.libs"
+  @call :sub_cl "!target_c!" "!target_exe!"
 
-  @if not exist "!targetDir!!targetName!.exe" (
+  @if not exist "!target_exe!" (
     @exit /b 1
   )
 
-  @echo Created !targetDir!!targetName!.exe
+  @echo Created !target_exe!
 
   @exit /b 0
 )
@@ -95,13 +96,16 @@
   @echo.
   @echo Building sim for %%~nM...
 
-  @if exist "%rootdir%out\%%~nM.c" (
-    @del "%rootdir%out\%%~nM.c"
+  @set "target_c=%rootdir%out\%%~nM.c"
+  @set "target_exe=%rootdir%out\%%~nM.exe"
+
+  @if exist "!target_c!" (
+    @del "!target_c!"
   )
 
-  "%MOD%" "%rootdir%target\%%~nM.model" "%rootdir%out\%%~nM.c"
+  "%MOD%" "%rootdir%target\%%~nM.model" "!target_c!"
 
-  @if not exist "%rootdir%out\%%~nM.c" (
+  @if not exist "!target_c!" (
     @echo.
     @echo Failed to generate .c file for %%~nM
     @exit /b 1
@@ -109,13 +113,13 @@
 
   @echo ...compiling...
 
-  @if exist "%rootdir%out\%%~nM.exe" (
-    @del "%rootdir%out\%%~nM.exe"
+  @if exist "!target_exe!" (
+    @del "!target_exe!"
   )
 
-  cl "%rootdir%sim\*.c" "%rootdir%out\%%~nM.c" gsl.lib /O2 /Fo:"%rootdir%sim\obj/" /Fe:"%rootdir%out\%%~nM.exe" /I"%rootdir%sim" /I"%rootdir%sim\gsl-2.7" /link /LIBPATH:"%rootdir%sim\gsl-2.7\.libs"
+  @call :sub_cl "!target_c!" "!target_exe!"
 
-  @if not exist "%rootdir%out\%%~nM.exe" (
+  @if not exist "!target_exe!" (
     @echo.
     @echo Failed to compile/link .c file for %%~nM
     @exit /b 1
@@ -125,3 +129,11 @@
   @echo ...done...created %%~nM.exe
 
 )
+
+@exit /b 0
+
+:sub_cl
+@set "model_c=%1"
+@set "model_exe=%2"
+cl "%rootdir%sim\*.c" "%model_c%" gsl.lib /O2 /Fo:"%rootdir%sim\obj/" /Fe:"%model_exe%" /I"%rootdir%sim" /I"%rootdir%sim\gsl-2.7" /link /LIBPATH:"%rootdir%sim\gsl-2.7\.libs"
+@exit /b

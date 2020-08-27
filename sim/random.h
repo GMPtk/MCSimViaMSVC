@@ -41,9 +41,14 @@
 #define SEED_DEFAULT 314159265.3589793
 #endif
 
+
+#define EXP1         2.7182818284590452353602875
+#define INV_SQRT_2PI 0.398942280401432702863
+#define LOG_SQRT_2PI 0.918938533204672669541
 #define PI           3.1415926535897932384626433
-#define INV_SQRT_2PI 0.398942280401433
-#define SQRT_2       1.4142135623731
+#define SQRT_2       1.414213562373095145475
+#define SQRT_2PI     2.506628274631000241612
+#define TWO_SQRTEXP1 3.297442541400256388329
 
 
 /* ----------------------------------------------------------------------------
@@ -66,18 +71,19 @@ double InvGGammaRandom (double alpha, double beta);
 double TruncInvGGammaRandom (double alpha, double beta, double a, double b);
 double GammaRandom (double alpha);
 double GGammaRandom (double alpha, double beta);
-double LogNormalRandom (double dMean, double dStdDev);
-double GenLogNormalRandom (double dMean, double dStdDevNorm, 
-			   double dStdDevLogNorm);
-double StudentTRandom (double dof, double dMean, double dStdDev);
+double LogNormalRandom (double dGeoMean, double dGeoSD);
+double GenLogNormalRandom (double dMean, double dSDNorm, double dSDLogNorm);
+double StudentTRandom (double dof, double dMean, double dSD);
 double LogUniformRandom (double a, double b);
-double NormalRandom (double dMean, double dStdDev);
+long   NegativeBinomialRandom (double r, double p);
+double NormalRandom (double dMean, double dSD);
 double PiecewiseRandom (double min, double a, double b, double max);
 double PiecewiseVariate (long cDim, double rg_x[], double rg_pdf[],
                          double rg_Cdf[], int iOrder, double *pVal_pdf);
 long   PoissonRandom (double mu);
-double TruncLogNormalRandom (double dMean, double dStdDev, double a, double b);
-double TruncNormalRandom (double dMean, double dStdDev, double a, double b);
+double TruncLogNormalRandom (double dGeoMean, double dGeoSD,
+                             double a, double b);
+double TruncNormalRandom (double dMean, double dSD, double a, double b);
 double UniformRandom (double a, double b);
 void   Multinomial (long n, int dim, double *p, double *x);
 void   WishartRandom (long n, long p, double *t, double *w, double *work);
@@ -88,13 +94,14 @@ void   WishartRandom (long n, long p, double *t, double *w, double *work);
 
 BOOL   and (BOOL A, BOOL B);
 double CDFNormal (double z);
-double InterpolateX (double rgX[], double rgY[], long lLower, double dY);
+double DFNormal (double x, double mu, double sd);
 
 #ifndef HAVE_ERFC
 double erfc (double x);
 #endif
 
 double GetSeed (void);
+double InterpolateX (double rgX[], double rgY[], long lLower, double dY);
 double lnDFNormal (double x, double mu, double sd);
 double lnGamma (double x);
 double lnDFBeta (double x, double alpha, double beta, double min, double max);

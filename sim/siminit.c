@@ -61,20 +61,31 @@ void GetModelInfo (PMODELINFO pmi)
 void InitIntegratorSpec (PINTSPEC pis)
 {
   pis->iAlgo = IAL_DEFAULT;
+
+  pis->dRtol = RTOL_DEFAULT;
+  pis->dAtol = ATOL_DEFAULT;
+
+  /* Lsodes specific */
   pis->iopt  = IOPT_DEFAULT;
   pis->itask = ITASK_DEFAULT;
   pis->itol  = ITOL_DEFAULT;
-  pis->dRtol = RTOL_DEFAULT;
-  pis->dAtol = ATOL_DEFAULT;
   pis->iMf   = IMF_DEFAULT;
   pis->liw   = LSODES_IWORKSIZE;
   pis->lrw   = LSODES_RWORKSIZE;
+
+  /* Cvodes specific */
+  pis->maxsteps = MXSTEPS_DEFAULT;
+  pis->maxnef   = MAXNEF_DEFAULT;
+  pis->maxcor   = MAXCOR_DEFAULT;
+  pis->maxncf   = MAXNCF_DEFAULT;
+  pis->nlscoef  = NLSCOEF_DEFAULT;
 
   if ( !(pis->iwork = InitlVector (pis->liw)) ||
        !(pis->rwork = InitdVector (pis->lrw)))
     ReportError (NULL, RE_OUTOFMEM | RE_FATAL,
                  "InitIntegratorSpec()", NULL);
 
+  /* Euler specific */
   pis->dTStep = TSTEP_DEFAULT;
 
 } /* InitIntegratorSpec */

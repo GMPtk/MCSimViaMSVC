@@ -787,23 +787,6 @@
   
   the following are optional calls which the user may make to
   gain additional capabilities in conjunction with lsodes.
-  (the routines xsetun and xsetf are designed to conform to the
-  slatec error handling package.)
-  
-      form of call                  function
-    call xsetun(lun)          set the logical unit number, lun, for
-                              output of messages from lsodes, if
-                              the default is not desired.
-                              the default value of lun is 6.
-  
-    call xsetf(mflag)         set a flag to control the printing of
-                              messages by lsodes.
-                              mflag = 0 means do not print. (danger..
-                              this risks losing valuable information.)
-                              mflag = 1 means print (the default).
-  
-                              either of the above calls may be made at
-                              any time and will take effect immediately.
   
     call srcms(rsav,isav,job) saves and restores the contents of
                               the internal common blocks used by
@@ -989,8 +972,7 @@
             sparsity descriptions, cdrv works with p-transpose, not p.
    d1mach   computes the unit roundoff in a machine-independent manner.
             It has been replaced in C by DBL_EPSILON.
-   xerrwv, xsetun, and xsetf   handle the printing of all error
-            messages and warnings.  xerrwv is machine-dependent.
+
   note..  vnorm is a function all the others are procedures.
   
   the intrinsic and external routines used by lsodes are..
@@ -1007,20 +989,24 @@
 #include "delays.h"
 #include "yourcode.h"
 
-double conit, crate, el[13], elco[156], hold, rmax, tesco[36], ccmax, el0,
-           h, hmin, hmxi, hu, rc, tn, uround;
+/* globals */
 
-double con0, conmin, ccmxj, psmall, rbig, seth;
+struct {
+  double conit, crate, el[13], elco[156], hold, rmax, tesco[36], ccmax, el0,
+         h, hmin, hmxi, hu, rc, tn, uround;
 
-long iplost, iesp, istatc, iys, iba, ibian, ibjan, ibjgp, ipian,
-     ipjan, ipjgp, ipigp, ipr, ipc, ipic, ipisp, iprsp, ipa, lenyh,
-     lenyhm, lenwk, lreq, lrat, lrest, lwmin, moss, msbj, nslj,
-     ngp, nlu, nnz, nsp, nzl, nzu;
+  double con0, conmin, ccmxj, psmall, rbig, seth;
 
-long illin, init, lyh, lewt, lacor, lsavf, lwm, liwm, mxstep, mxhnil,
-     nhnil, ntrep, nslast, nyh, ialth, ipup, lmax, meo, nqnyh, nslp,
-     icf, ierpj, iersl, jcur, jstart, kflag, l, meth, miter, maxord, 
-     maxcor, msbp, mxncf, n, nq, nst, nfe, nje, nqu;
+  long iplost, iesp, istatc, iys, iba, ibian, ibjan, ibjgp, ipian,
+       ipjan, ipjgp, ipigp, ipr, ipc, ipic, ipisp, iprsp, ipa, lenyh,
+       lenyhm, lenwk, lreq, lrat, lrest, lwmin, moss, msbj, nslj,
+       ngp, nlu, nnz, nsp, nzl, nzu;
+
+  long illin, init, lyh, lewt, lacor, lsavf, lwm, mxstep, mxhnil,
+       nhnil, ntrep, nslast, nyh, ialth, ipup, lmax, meo, nqnyh, nslp,
+       icf, ierpj, iersl, jcur, jstart, kflag, l, meth, miter, maxord, 
+       maxcor, msbp, mxncf, n, nq, nst, nfe, nje, nqu;
+} IGS;
 
 
 /* ----------------------------------------------------------------------------
@@ -1035,9 +1021,9 @@ long illin, init, lyh, lewt, lacor, lsavf, lwm, liwm, mxstep, mxhnil,
 double d_sign(double *pa1, double *pa2)
 {
   double a3;
-  a3 = ( *pa1 >= 0 ) ? *pa1 : -*pa1;
-  if ( *pa2 >= 0 ) return a3;
-  return  -a3;
+  a3 = ((*pa1 >= 0) ? *pa1 : -*pa1);
+  if (*pa2 >= 0) return a3;
+  return -a3;
 }
 
 
@@ -1051,11 +1037,10 @@ int lsodes_(long *neq, double *y,
 
   /* Initialized data */
 
-  static long mord[2] = { 12,5 };
+  static long mord[2] = {12, 5};
   static long mxstp0 = 500;
   static long mxhnl0 = 10;
 
-  
   /* System generated locals */
   long i__1, i__2;
   double d__1, d__2;
@@ -1104,18 +1089,18 @@ int lsodes_(long *neq, double *y,
 
   if (*istate == 1) goto L10;
 
-  if (init == 0) goto L603;
+  if (IGS.init == 0) goto L603;
 
   if (*istate == 2) goto L200;
 
   goto L20;
 
 L10:
-  init = 0;
+  IGS.init = 0;
   if (*tout == *t) goto L430;
 
 L20:
-  ntrep = 0;
+  IGS.ntrep = 0;
 
   /* ---------------------------------------------------------------------------
      block b.
@@ -1133,60 +1118,60 @@ L20:
 
   if (*istate == 1) goto L25;
 
-  if (neq[1] > n) goto L605;
+  if (neq[1] > IGS.n) goto L605;
 
 L25:
-  n = neq[1];
+  IGS.n = neq[1]; /* undeclared n, uses global */
   if (*itol < 1 || *itol > 4) goto L606;
 
   if (*iopt < 0 || *iopt > 1) goto L607;
 
-  moss = *mf / 100;
-  mf1 = *mf - moss * 100;
-  meth = mf1 / 10;
-  miter = mf1 - meth * 10;
+  IGS.moss = *mf / 100;
+  mf1 = *mf - IGS.moss * 100;
+  IGS.meth = mf1 / 10;
+  IGS.miter = mf1 - IGS.meth * 10;
 
-  if (moss < 0 || moss > 2) goto L608;
+  if (IGS.moss < 0 || IGS.moss > 2) goto L608;
 
-  if (meth < 1 || meth > 2) goto L608;
+  if (IGS.meth < 1 || IGS.meth > 2) goto L608;
 
-  if (miter < 0 || miter > 3) goto L608;
+  if (IGS.miter < 0 || IGS.miter > 3) goto L608;
 
-  if (miter == 0 || miter == 3) moss = 0;
+  if (IGS.miter == 0 || IGS.miter == 3) IGS.moss = 0;
 
   /* next process and check the optional inputs. */
 
   if (*iopt == 1) goto L40;
 
-  maxord = mord[meth - 1];
-  mxstep = mxstp0;
-  mxhnil = mxhnl0;
+  IGS.maxord = mord[IGS.meth - 1];
+  IGS.mxstep = mxstp0;
+  IGS.mxhnil = mxhnl0;
   if (*istate == 1) h0 = 0.0;
 
-  hmxi = 0.0;
-  hmin = 0.0;
-  seth = 0.0;
+  IGS.hmxi = 0.0;
+  IGS.hmin = 0.0;
+  IGS.seth = 0.0;
   goto L60;
 
 L40:
-  maxord = iwork[5];
-  if (maxord < 0) goto L611;
+  IGS.maxord = iwork[5];
+  if (IGS.maxord < 0) goto L611;
 
-  if (maxord == 0) maxord = 100;
+  if (IGS.maxord == 0) IGS.maxord = 100;
 
   /* Computing MIN */
-  maxord = mymin(maxord,mord[meth - 1]);
-  mxstep = iwork[6];
+  IGS.maxord = mymin(IGS.maxord,mord[IGS.meth - 1]);
+  IGS.mxstep = iwork[6];
 
-  if (mxstep < 0) goto L612;
+  if (IGS.mxstep < 0) goto L612;
 
-  if (mxstep == 0) mxstep = mxstp0;
+  if (IGS.mxstep == 0) IGS.mxstep = mxstp0;
 
-  mxhnil = iwork[7];
+  IGS.mxhnil = iwork[7];
 
-  if (mxhnil < 0) goto L613;
+  if (IGS.mxhnil < 0) goto L613;
 
-  if (mxhnil == 0) mxhnil = mxhnl0;
+  if (IGS.mxhnil == 0) IGS.mxhnil = mxhnl0;
 
   if (*istate != 1) goto L50;
 
@@ -1197,20 +1182,20 @@ L50:
   hmax = rwork[6];
   if (hmax < 0.) goto L615;
 
-  hmxi = 0.;
-  if (hmax > 0.) hmxi = 1.0 / hmax;
+  IGS.hmxi = 0.;
+  if (hmax > 0.) IGS.hmxi = 1.0 / hmax;
 
-  hmin = rwork[7];
-  if (hmin < 0.) goto L616;
+  IGS.hmin = rwork[7];
+  if (IGS.hmin < 0.) goto L616;
 
-  seth = rwork[8];
-  if (seth < 0.) goto L609;
+  IGS.seth = rwork[8];
+  if (IGS.seth < 0.) goto L609;
 
 L60:
   /* check rtol and atol for legality */
   rtoli = rtol[1];
   atoli = atol[1];
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
     if (*itol >= 3) rtoli = rtol[i];
 
@@ -1239,25 +1224,25 @@ L60:
      omitted segments are.. acor if istate = 1, ewt and acor if istate = 3
      and moss = 1, and savf, ewt, and acor if istate = 3 and moss = 0.
   */
-  lrat = lenrat;
-  if (*istate == 1) nyh = n;
+  IGS.lrat = lenrat;
+  if (*istate == 1) IGS.nyh = IGS.n;
 
-  lwmin = 0;
-  if (miter == 1)
-    lwmin = (n << 2) + n * 10 / (double) lrat;
+  IGS.lwmin = 0;
+  if (IGS.miter == 1)
+    IGS.lwmin = (IGS.n << 2) + IGS.n * 10 / (double) IGS.lrat;
 
-  if (miter == 2)
-    lwmin = (n << 2) + n * 11 / (double) lrat;
+  if (IGS.miter == 2)
+    IGS.lwmin = (IGS.n << 2) + IGS.n * 11 / (double) IGS.lrat;
 
-  if (miter == 3) lwmin = n + 2;
+  if (IGS.miter == 3) IGS.lwmin = IGS.n + 2;
 
-  lenyh = (maxord + 1) * nyh;
-  lrest = lenyh + n * 3;
-  lenrw = lwmin + 20 + lrest;
+  IGS.lenyh = (IGS.maxord + 1) * IGS.nyh;
+  IGS.lrest = IGS.lenyh + IGS.n * 3;
+  lenrw = IGS.lwmin + 20 + IGS.lrest;
   iwork[17] = lenrw;
   leniw = 30;
-  if (moss == 0 && miter != 0 && miter != 3)
-    leniw = leniw + n + 1;
+  if (IGS.moss == 0 && IGS.miter != 0 && IGS.miter != 3)
+    leniw = leniw + IGS.n + 1;
 
   iwork[18] = leniw;
   if (lenrw > *lrw) goto L617;
@@ -1265,43 +1250,43 @@ L60:
   if (leniw > *liw) goto L618;
 
   lia = 31;
-  if (moss == 0 && miter != 0 && miter != 3)
-    leniw = leniw + iwork[lia + n] - 1;
+  if (IGS.moss == 0 && IGS.miter != 0 && IGS.miter != 3)
+    leniw = leniw + iwork[lia + IGS.n] - 1;
 
   iwork[18] = leniw;
   if (leniw > *liw) goto L618;
 
-  lja = lia + n + 1;
+  lja = lia + IGS.n + 1;
   lia = mymin(lia,*liw);
   lja = mymin(lja,*liw);
-  lwm = 21;
-  if (*istate == 1) nq = 1;
+  IGS.lwm = 21;
+  if (*istate == 1) IGS.nq = 1;
 
   /* Computing MIN */
-  i__1 = nq + 1;
-  i__2 = maxord + 2;
+  i__1 = IGS.nq + 1;
+  i__2 = IGS.maxord + 2;
   ncolm = mymin(i__1,i__2);
-  lenyhm = ncolm * nyh;
-  lenyht = lenyh;
-  if (miter == 1 || miter == 2)
-    lenyht = lenyhm;
+  IGS.lenyhm = ncolm * IGS.nyh;
+  lenyht = IGS.lenyh;
+  if (IGS.miter == 1 || IGS.miter == 2)
+    lenyht = IGS.lenyhm;
 
   imul = 2;
-  if (*istate == 3) imul = moss;
+  if (*istate == 3) imul = IGS.moss;
 
-  if (moss == 2) imul = 3;
+  if (IGS.moss == 2) imul = 3;
 
-  lrtem = lenyht + imul * n;
-  lwtem = lwmin;
-  if (miter == 1 || miter == 2)
+  lrtem = lenyht + imul * IGS.n;
+  lwtem = IGS.lwmin;
+  if (IGS.miter == 1 || IGS.miter == 2)
     lwtem = *lrw - 20 - lrtem;
 
-  lenwk = lwtem;
-  lyhn = lwm + lwtem;
-  lsavf = lyhn + lenyht;
-  lewt = lsavf + n;
-  lacor = lewt + n;
-  istatc = *istate;
+  IGS.lenwk = lwtem;
+  lyhn = IGS.lwm + lwtem;
+  IGS.lsavf = lyhn + lenyht;
+  IGS.lewt = IGS.lsavf + IGS.n;
+  IGS.lacor = IGS.lewt + IGS.n;
+  IGS.istatc = *istate;
 
   if (*istate == 1) goto L100;
 
@@ -1314,8 +1299,8 @@ L60:
      if maxord was reduced below nq, then the pointers are finally set
      so that savf is identical to yh(*,maxord+2).
   */
-  lyhd = lyh - lyhn;
-  imax = lyhn - 1 + lenyhm;
+  lyhd = IGS.lyh - lyhn;
+  imax = lyhn - 1 + IGS.lenyhm;
 
   /* move yh.  branch for move right, no move, or move left. */
   if (lyhd < 0) goto L70;
@@ -1337,33 +1322,33 @@ L74:
     rwork[i] = rwork[i + lyhd];
 
 L80:
-  lyh = lyhn;
-  iwork[22] = lyh;
-  if (miter == 0 || miter == 3) goto L92;
+  IGS.lyh = lyhn;
+  iwork[22] = IGS.lyh;
+  if (IGS.miter == 0 || IGS.miter == 3) goto L92;
 
-  if (moss != 2) goto L85;
+  if (IGS.moss != 2) goto L85;
 
   /* temporarily load ewt if miter = 1 or 2 and moss = 2. */
-  ewset_(&n, itol, &rtol[1], &atol[1], &rwork[lyh], &
-         rwork[lewt]);
+  ewset_(&(IGS.n), itol, &rtol[1], &atol[1], &rwork[IGS.lyh], &
+         rwork[IGS.lewt]);
 
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
-    if (rwork[i + lewt - 1] <= 0.) goto L621;
-    rwork[i + lewt - 1] = 1. / rwork[i + lewt - 1];
+    if (rwork[i + IGS.lewt - 1] <= 0.) goto L621;
+    rwork[i + IGS.lewt - 1] = 1. / rwork[i + IGS.lewt - 1];
   }
 
 L85:
   /* iprep and prep do sparse matrix preprocessing if miter = 1 or 2. */
-  lsavf = mymin(lsavf,*lrw);
-  lewt = mymin(lewt,*lrw);
-  lacor = mymin(lacor,*lrw);
+  IGS.lsavf = mymin(IGS.lsavf,*lrw);
+  IGS.lewt = mymin(IGS.lewt,*lrw);
+  IGS.lacor = mymin(IGS.lacor,*lrw);
   iprep_(&neq[1], &y[1], &rwork[1], &iwork[lia], &iwork[lja], &ipflag);
-  lenrw = lwm - 1 + lenwk + lrest;
+  lenrw = IGS.lwm - 1 + IGS.lenwk + IGS.lrest;
   iwork[17] = lenrw;
-  if (ipflag != -1) iwork[23] = ipian;
+  if (ipflag != -1) iwork[23] = IGS.ipian;
 
-  if (ipflag != -1) iwork[24] = ipjan;
+  if (ipflag != -1) iwork[24] = IGS.ipjan;
 
   ipgo = -ipflag + 1;
   switch (ipgo) {
@@ -1377,17 +1362,17 @@ L85:
   }
 
 L90:
-  iwork[22] = lyh;
+  iwork[22] = IGS.lyh;
   if (lenrw > *lrw) goto L617;
 
 L92:
   /* set flag to signal parameter changes to stode. */
-  jstart = -1;
-  if (n == nyh) goto L200;
+  IGS.jstart = -1;
+  if (IGS.n == IGS.nyh) goto L200;
 
   /* neq was reduced. zero part of yh to avoid undefined references. */
-  i1 = lyh + l * nyh;
-  i2 = lyh + (maxord + 1) * nyh - 1;
+  i1 = IGS.lyh + IGS.l * IGS.nyh;
+  i2 = IGS.lyh + (IGS.maxord + 1) * IGS.nyh - 1;
 
   if (i1 > i2) goto L200;
 
@@ -1405,45 +1390,44 @@ L92:
      the error weights in ewt are inverted after being loaded.
   */
 L100:
-  lyh = lyhn;
-  iwork[22] = lyh;
-  tn = *t;
-  nst = 0;
-  h = 1.0;
-  nnz = 0;
-  ngp = 0;
-  nzl = 0;
-  nzu = 0;
+  IGS.lyh = lyhn;
+  iwork[22] = IGS.lyh;
+  IGS.tn = *t;
+  IGS.nst = 0;
+  IGS.h = 1.0;
+  IGS.nnz = 0;
+  IGS.ngp = 0;
+  IGS.nzl = 0;
+  IGS.nzu = 0;
 
   /* load the initial value vector in yh. */
-  i__1 = n;
-  for (i = 1; i <= i__1; ++i) rwork[i + lyh - 1] = y[i];
+  i__1 = IGS.n;
+  for (i = 1; i <= i__1; ++i) rwork[i + IGS.lyh - 1] = y[i];
 
   /* initial call to f.  (lf0 points to yh(*,2).) */
-  lf0 = lyh + nyh;
+  lf0 = IGS.lyh + IGS.nyh;
   CalcDeriv (&y[1], &rwork[lf0], t);
 
-  nfe = 1;
+  IGS.nfe = 1;
 
   /* load and invert the ewt array.  (h is temporarily set to 1.0.) */
-  ewset_(&n, itol, &rtol[1], &atol[1], &rwork[lyh], &
-         rwork[lewt]);
+  ewset_(&(IGS.n), itol, &rtol[1], &atol[1], &rwork[IGS.lyh], &rwork[IGS.lewt]);
 
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
-    if (rwork[i + lewt - 1] <= 0.) goto L621;
-    rwork[i + lewt - 1] = 1. / rwork[i + lewt - 1];
+    if (rwork[i + IGS.lewt - 1] <= 0.) goto L621;
+    rwork[i + IGS.lewt - 1] = 1. / rwork[i + IGS.lewt - 1];
   }
 
-  if (miter == 0 || miter == 3) goto L120;
+  if (IGS.miter == 0 || IGS.miter == 3) goto L120;
 
   /* iprep and prep do sparse matrix preprocessing if miter = 1 or 2. */
-  lacor = mymin(lacor,*lrw);
+  IGS.lacor = mymin(IGS.lacor,*lrw);
   iprep_(&neq[1], &y[1], &rwork[1], &iwork[lia], &iwork[lja], &ipflag);
-  lenrw = lwm - 1 + lenwk + lrest;
+  lenrw = IGS.lwm - 1 + IGS.lenwk + IGS.lrest;
   iwork[17] = lenrw;
-  if (ipflag != -1) iwork[23] = ipian;
-  if (ipflag != -1) iwork[24] = ipjan;
+  if (ipflag != -1) iwork[23] = IGS.ipian;
+  if (ipflag != -1) iwork[24] = IGS.ipjan;
 
   ipgo = -ipflag + 1;
   switch (ipgo) {
@@ -1457,7 +1441,7 @@ L100:
   }
 
 L115:
-  iwork[22] = lyh;
+  iwork[22] = IGS.lyh;
   if (lenrw > *lrw) goto L617;
 
 L120:
@@ -1470,26 +1454,26 @@ L120:
 
 L125:
   /* initialize all remaining parameters */
-  uround = DBL_EPSILON;
-  jstart = 0;
-  if (miter != 0)
-    rwork[lwm] = sqrt((double) uround);
+  IGS.uround = DBL_EPSILON;
+  IGS.jstart = 0;
+  if (IGS.miter != 0)
+    rwork[IGS.lwm] = sqrt((double) IGS.uround);
 
-  msbj = 50;
-  nslj = 0;
-  ccmxj = 0.2;
-  psmall = uround * 1e3;
-  rbig = 0.01 / psmall;
-  nhnil = 0;
-  nje = 0;
-  nlu = 0;
-  nslast = 0;
-  hu = 0.0;
-  nqu = 0;
-  ccmax = 0.3;
-  maxcor = 3;
-  msbp = 20;
-  mxncf = 10;
+  IGS.msbj = 50;
+  IGS.nslj = 0;
+  IGS.ccmxj = 0.2;
+  IGS.psmall = IGS.uround * 1e3;
+  IGS.rbig = 0.01 / IGS.psmall;
+  IGS.nhnil = 0;
+  IGS.nje = 0;
+  IGS.nlu = 0;
+  IGS.nslast = 0;
+  IGS.hu = 0.0;
+  IGS.nqu = 0;
+  IGS.ccmax = 0.3;
+  IGS.maxcor = 3;
+  IGS.msbp = 20;
+  IGS.mxncf = 10;
 
   /* ---------------------------------------------------------------------------
      the coding below computes the step size, h0, to be attempted on the
@@ -1508,19 +1492,19 @@ L125:
 
      the sign of h0 is inferred from the initial values of tout and t.
   */
- lf0 = lyh + nyh;
+ lf0 = IGS.lyh + IGS.nyh;
  if (h0 != 0.) goto L180;
 
   tdist = fabs(*tout - *t);
 
   /* Computing MAX */
   w0 = mymax(fabs(*t), fabs(*tout));
-  if (tdist < uround * 2.0 * w0) goto L622;
+  if (tdist < IGS.uround * 2.0 * w0) goto L622;
 
   tol = rtol[1];
   if (*itol <= 2) goto L140;
 
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
     /* Computing MAX */
     d__1 = tol, d__2 = rtol[i];
@@ -1531,7 +1515,7 @@ L140:
   if (tol > 0.) goto L160;
 
   atoli = atol[1];
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
     if (*itol == 2 || *itol == 4) atoli = atol[i];
     ayi = fabs(y[i]);
@@ -1545,10 +1529,10 @@ L140:
 L160:
   /* Computing MAX */
   d__1 = tol;
-  d__2 = uround * 100.;
+  d__2 = IGS.uround * 100.;
   tol = mymax(d__1,d__2);
   tol = mymin(tol,0.001);
-  sum = vnorm_(&n, &rwork[lf0], &rwork[lewt]);
+  sum = vnorm_(&(IGS.n), &rwork[lf0], &rwork[IGS.lewt]);
 
   /* Computing 2nd power */
   d__1 = sum;
@@ -1560,12 +1544,12 @@ L160:
 
 L180:
   /* adjust h0 if necessary to meet hmax bound */
-  rh = fabs(h0) * hmxi;
+  rh = fabs(h0) * IGS.hmxi;
   if (rh > 1.0) h0 /= rh;
 
   /* load h with h0 and scale yh(*,2) by h0 */
-  h = h0;
-  i__1 = n;
+  IGS.h = h0;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i)
     rwork[i + lf0 - 1] = h0 * rwork[i + lf0 - 1];
 
@@ -1578,7 +1562,7 @@ L180:
      and is to check stop conditions before taking a step.
   */
 L200:
-  nslast = nst;
+  IGS.nslast = IGS.nst;
   switch (*itask) {
     case 1:  goto L210;
     case 2:  goto L250;
@@ -1588,31 +1572,31 @@ L200:
   }
 
 L210:
-  if ((tn - *tout) * h < 0.0) goto L250;
+  if ((IGS.tn - *tout) * IGS.h < 0.0) goto L250;
 
-  intdy_(tout, 0, &rwork[lyh], &nyh, &y[1], &iflag);
+  intdy_(tout, 0, &rwork[IGS.lyh], &(IGS.nyh), &y[1], &iflag);
   if (iflag != 0) goto L627;
 
   *t = *tout;
   goto L420;
 
 L220:
-  tp = tn - hu * (uround * 100.0 + 1.);
-  if ((tp - *tout) * h > 0.0) goto L623;
+  tp = IGS.tn - IGS.hu * (IGS.uround * 100.0 + 1.);
+  if ((tp - *tout) * IGS.h > 0.0) goto L623;
 
-  if ((tn - *tout) * h < 0.0) goto L250;
+  if ((IGS.tn - *tout) * IGS.h < 0.0) goto L250;
 
   goto L400;
 
 L230:
   tcrit = rwork[1];
-  if ((tn - tcrit) * h > 0.0) goto L624;
+  if ((IGS.tn - tcrit) * IGS.h > 0.0) goto L624;
 
-  if ((tcrit - *tout) * h < 0.0) goto L625;
+  if ((tcrit - *tout) * IGS.h < 0.0) goto L625;
 
-  if ((tn - *tout) * h < 0.0) goto L245;
+  if ((IGS.tn - *tout) * IGS.h < 0.0) goto L245;
 
-  intdy_(tout, 0, &rwork[lyh], &nyh, &y[1], &iflag);
+  intdy_(tout, 0, &rwork[IGS.lyh], &(IGS.nyh), &y[1], &iflag);
 
   if (iflag != 0) goto L627;
 
@@ -1621,19 +1605,19 @@ L230:
 
 L240:
   tcrit = rwork[1];
-  if ((tn - tcrit) * h > 0.0) goto L624;
+  if ((IGS.tn - tcrit) * IGS.h > 0.0) goto L624;
 
 L245:
-  hmx = fabs(tn) + fabs(h);
-  ihit = fabs(tn - tcrit) <= uround * 100.0 * hmx;
+  hmx = fabs(IGS.tn) + fabs(IGS.h);
+  ihit = fabs(IGS.tn - tcrit) <= IGS.uround * 100.0 * hmx;
 
   if (ihit) goto L400;
 
-  tnext = tn + h * (uround * 4.0 + 1.0);
-  if ((tnext - tcrit) * h <= 0.0) goto L250;
+  tnext = IGS.tn + IGS.h * (IGS.uround * 4.0 + 1.0);
+  if ((tnext - tcrit) * IGS.h <= 0.0) goto L250;
 
-  h = (tcrit - tn) * (1.0 - uround * 4.0);
-  if (*istate == 2) jstart = -2;
+  IGS.h = (tcrit - IGS.tn) * (1.0 - IGS.uround * 4.0);
+  if (*istate == 2) IGS.jstart = -2;
 
   /* ---------------------------------------------------------------------------
      block e.
@@ -1648,63 +1632,57 @@ L245:
      check for h below the roundoff level in t.
   */
 L250:
-  if (nst - nslast >= mxstep) goto L500;
+  if (IGS.nst - IGS.nslast >= IGS.mxstep) goto L500;
 
-  ewset_(&n, itol, &rtol[1], &atol[1], &rwork[lyh], &
-    rwork[lewt]);
-  i__1 = n;
+  ewset_(&(IGS.n), itol, &rtol[1], &atol[1], &rwork[IGS.lyh], &rwork[IGS.lewt]);
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
-    if (rwork[i + lewt - 1] <= 0.) goto L510;
-    rwork[i + lewt - 1] = 1. / rwork[i + lewt - 1];
+    if (rwork[i + IGS.lewt - 1] <= 0.) goto L510;
+    rwork[i + IGS.lewt - 1] = 1. / rwork[i + IGS.lewt - 1];
   }
 
 L270:
-  tolsf = uround *
-          vnorm_(&n, &rwork[lyh], &rwork[lewt]);
+  tolsf = IGS.uround * vnorm_(&(IGS.n), &rwork[IGS.lyh], &rwork[IGS.lewt]);
 
   if (tolsf <= 1.) goto L280;
 
   tolsf *= 2.;
-  if (nst == 0) goto L626;
+  if (IGS.nst == 0) goto L626;
 
   goto L520;
 
 L280:
-  if (tn + h != tn) goto L290;
+  if (IGS.tn + IGS.h != IGS.tn) goto L290;
 
-  ++nhnil;
-  if (nhnil > mxhnil) goto L290;
+  ++IGS.nhnil;
+  if (IGS.nhnil > IGS.mxhnil) goto L290;
 
-  xerrwv ("lsodes-- warning..internal t (=r1) and h (=r2) are",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         such that in the machine, t + h = t on the next step  ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         (h = step size). solver will continue anyway",
-          0, 0, 0, 0, 2, tn, h);
+  printf ("lsodes: internal t (=%21.13f) and h (=%21.13f) are such that\n"
+          "        t + h = t on the next step (h = step size).\n"
+          "        Solver will continue anyway.\n",
+          IGS.tn, IGS.h);
 
-  if (nhnil < mxhnil) goto L290;
+  if (IGS.nhnil < IGS.mxhnil) goto L290;
 
-  xerrwv ("lsodes-- above warning has been issued i1 times.  ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         it will not be issued again for this problem",
-          0, 1, mxhnil, 0, 0, 0.0, 0.0);
+  printf ("lsodes: above warning has been issued %ld times.\n"
+          "        It will not be issued again\n", IGS.mxhnil);
 
 L290:
   /* call the StoreDelays and step_by_step routine for user-specified work.
      They are called before the stode routine to be on the actual
      differential system trajectory */
   if (bDelays) 
-    StoreDelayed(tn);
+    StoreDelayed(IGS.tn);
 
   DoStep_by_Step();
 
   /* call stode(neq,y,yh,nyh,yh,ewt,savf,acor,wm,wm,f,jac,prjs,slss) */
-  stode_(&neq[0], &y[0], &rwork[lyh], &nyh,
-         &rwork[lyh],   &rwork[lewt],
-         &rwork[lsavf], &rwork[lacor],
-         &rwork[lwm], (long *)&rwork[lwm]);
+  stode_(&neq[0], &y[0], &rwork[IGS.lyh], &(IGS.nyh),
+         &rwork[IGS.lyh],   &rwork[IGS.lewt],
+         &rwork[IGS.lsavf], &rwork[IGS.lacor],
+         &rwork[IGS.lwm], (long *)&rwork[IGS.lwm]);
 
-  kgo = 1 - kflag;
+  kgo = 1 - IGS.kflag;
   switch (kgo) {
     case 1:  goto L300;
     case 2:  goto L530;
@@ -1719,7 +1697,7 @@ L290:
      core integrator (kflag = 0).  test for stop conditions.
   */
 L300:
-  init = 1;
+  IGS.init = 1;
   switch (*itask) {
     case 1:  goto L310;
     case 2:  goto L400;
@@ -1730,42 +1708,42 @@ L300:
 
 L310:
   /* itask = 1.  if tout has been reached, interpolate */
-  if ((tn - *tout) * h < 0.0) goto L250;
-  intdy_(tout, 0, &rwork[lyh], &nyh, &y[1], &iflag);
+  if ((IGS.tn - *tout) * IGS.h < 0.0) goto L250;
+  intdy_(tout, 0, &rwork[IGS.lyh], &(IGS.nyh), &y[1], &iflag);
   *t = *tout;
   goto L420;
 
 L330:
   /* itask = 3.  jump to exit if tout was reached */
-  if ((tn - *tout) * h >= 0.0) goto L400;
+  if ((IGS.tn - *tout) * IGS.h >= 0.0) goto L400;
   goto L250;
 
 L340:
   /* itask = 4.  see if tout or tcrit was reached.
      adjust h if necessary */
-  if ((tn - *tout) * h < 0.0) goto L345;
+  if ((IGS.tn - *tout) * IGS.h < 0.0) goto L345;
 
-  intdy_(tout, 0, &rwork[lyh], &nyh, &y[1], &iflag);
+  intdy_(tout, 0, &rwork[IGS.lyh], &(IGS.nyh), &y[1], &iflag);
 
   *t = *tout;
   goto L420;
 
 L345:
-  hmx = fabs(tn) + fabs(h);
-  ihit = fabs(tn - tcrit) <= uround * 100.0 * hmx;
+  hmx = fabs(IGS.tn) + fabs(IGS.h);
+  ihit = fabs(IGS.tn - tcrit) <= IGS.uround * 100.0 * hmx;
   if (ihit) goto L400;
 
-  tnext = tn + h * (uround * 4.0 + 1.0);
-  if ((tnext - tcrit) * h <= 0.0) goto L250;
+  tnext = IGS.tn + IGS.h * (IGS.uround * 4.0 + 1.0);
+  if ((tnext - tcrit) * IGS.h <= 0.0) goto L250;
 
-  h = (tcrit - tn) * (1.0 - uround * 4.0);
-  jstart = -2;
+  IGS.h = (tcrit - IGS.tn) * (1.0 - IGS.uround * 4.0);
+  IGS.jstart = -2;
   goto L250;
 
 L350:
   /* itask = 5.  see if tcrit was reached and jump to exit */
-  hmx = fabs(tn) + fabs(h);
-  ihit = fabs(tn - tcrit) <= uround * 100.0 * hmx;
+  hmx = fabs(IGS.tn) + fabs(IGS.h);
+  ihit = fabs(IGS.tn - tcrit) <= IGS.uround * 100.0 * hmx;
 
   /* ---------------------------------------------------------------------------
      block g.
@@ -1778,38 +1756,38 @@ L350:
      except that if this has happened repeatedly, the run is terminated.
   */
 L400:
-  i__1 = n;
-  for (i = 1; i <= i__1; ++i) y[i] = rwork[i + lyh - 1];
+  i__1 = IGS.n;
+  for (i = 1; i <= i__1; ++i) y[i] = rwork[i + IGS.lyh - 1];
 
-  *t = tn;
+  *t = IGS.tn;
   if (*itask != 4 && *itask != 5) goto L420;
 
   if (ihit) *t = tcrit;
 
 L420:
   *istate = 2;
-  illin = 0;
-  rwork[11] = hu;
-  rwork[12] = h;
-  rwork[13] = tn;
-  iwork[11] = nst;
-  iwork[12] = nfe;
-  iwork[13] = nje;
-  iwork[14] = nqu;
-  iwork[15] = nq;
-  iwork[19] = nnz;
-  iwork[20] = ngp;
-  iwork[21] = nlu;
-  iwork[25] = nzl;
-  iwork[26] = nzu;
+  IGS.illin = 0;
+  rwork[11] = IGS.hu;
+  rwork[12] = IGS.h;
+  rwork[13] = IGS.tn;
+  iwork[11] = IGS.nst;
+  iwork[12] = IGS.nfe;
+  iwork[13] = IGS.nje;
+  iwork[14] = IGS.nqu;
+  iwork[15] = IGS.nq;
+  iwork[19] = IGS.nnz;
+  iwork[20] = IGS.ngp;
+  iwork[21] = IGS.nlu;
+  iwork[25] = IGS.nzl;
+  iwork[26] = IGS.nzu;
   return 0;
 
 L430:
-  ++ntrep;
-  if (ntrep < 5) return 0;
+  ++IGS.ntrep;
+  if (IGS.ntrep < 5) return 0;
 
-  xerrwv ("lsodes-- repeated calls with istate = 1 and tout = t (=r1)  ",
-          0, 0, 0, 0, 1, *t, 0.0);
+  printf ("lsodes: repeated calls with istate = 1 and tout = t = %21.13f.\n",
+          *t);
   goto L800;
 
   /* ---------------------------------------------------------------------------
@@ -1824,29 +1802,27 @@ L430:
   */
 L500:
   /* the maximum number of steps was taken before reaching tout */
-  xerrwv ("lsodes-- at current t (=r1), mxstep (=i1) steps   ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         taken on this call before reaching tout     ",
-          0, 1, mxstep, 0, 1, tn, 0.0);
+  printf ("lsodes: at t = %21.13f, mxstep (= %ld) steps\n"
+          "        taken before reaching tout.\n",
+          IGS.tn, IGS.mxstep);
 
   *istate = -1;
   goto L580;
 
 L510:
   /* ewt(i) .le. 0.0 for some i (not at start of problem) */
-  ewti = rwork[lewt + i - 1];
-  xerrwv ("lsodes-- at t (=r1), ewt(i1) has become r2 .le. 0.",
-          0, 1, i, 0, 2, tn, ewti);
+  ewti = rwork[IGS.lewt + i - 1];
+  printf ("lsodes: at t = %21.13f, ewt (%ld) has become %21.13f <= 0.\n",
+          IGS.tn, i, ewti);
 
   *istate = -6;
   goto L580;
 
 L520:
   /* too much accuracy requested for machine precision */
-  xerrwv ("lsodes-- at t (=r1), too much accuracy requested  ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         for precision of machine..  see tolsf (=r2) ",
-          0, 0, 0, 0, 2, tn, tolsf);
+  printf ("lsodes: at t = %21.13f, too much accuracy requested\n"
+          "        for precision of machine (tolsf = %21.13f).\n",
+          IGS.tn, tolsf);
 
   rwork[14] = tolsf;
   *istate = -2;
@@ -1854,32 +1830,27 @@ L520:
 
 L530:
   /* kflag = -1.  error test failed repeatedly or with abs(h) = hmin */
-  xerrwv ("lsodes-- at t(=r1) and step size h(=r2), the error",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         test failed repeatedly or with abs(h) = hmin",
-          0, 0, 0, 0, 2, tn, h);
+  printf ("lsodes: at t = %21.13f and step size h = %21.13f, the error\n"
+          "        test failed repeatedly or with abs(h) = hmin.\n",
+          IGS.tn, IGS.h);
 
   *istate = -4;
   goto L560;
 
 L540:
   /* kflag = -2.  convergence failed repeatedly or with abs(h) = hmin */
-  xerrwv ("lsodes-- at t (=r1) and step size h (=r2), the    ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         corrector convergence failed repeatedly     ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         or with abs(h) = hmin   ", 0, 0, 0, 0, 2, tn, h);
+  printf ("lsodes: at t = %21.13f and step size h = %21.13f, the corrector\n"
+          "        convergence failed repeatedly or with abs(h) = hmin.\n",
+          IGS.tn, IGS.h);
 
   *istate = -5;
   goto L560;
 
 L550:
   /* kflag = -3.  fatal error flag returned by prjs or slss (cdrv) */
-  xerrwv ("lsodes-- at t (=r1) and step size h (=r2), a fatal",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         error flag was returned by cdrv (by way of  ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         subroutine prjs or slss)", 0, 0, 0, 0, 2, tn, h);
+  printf ("lsodes: at t = %21.13f and step size h = %21.13f, a fatal error flag\n"
+          "        was returned by cdrv (by way of subroutine prjs or slss.\n",
+          IGS.tn, IGS.h);
 
   *istate = -7;
   goto L580;
@@ -1888,9 +1859,9 @@ L560:
   /* compute imxer if relevant */
   big = 0.;
   imxer = 1;
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
-    size = fabs(rwork[i + lacor - 1] * rwork[i + lewt - 1]);
+    size = fabs(rwork[i + IGS.lacor - 1] * rwork[i + IGS.lewt - 1]);
     if (big >= size) goto L570;
     big = size;
     imxer = i;
@@ -1902,23 +1873,23 @@ L570: ;
 
 L580:
   /* set y vector, t, illin, and optional outputs */
-  i__1 = n;
-  for (i = 1; i <= i__1; ++i) y[i] = rwork[i + lyh - 1];
-  *t = tn;
-  illin = 0;
-  rwork[11] = hu;
-  rwork[12] = h;
-  rwork[13] = tn;
-  iwork[11] = nst;
-  iwork[12] = nfe;
-  iwork[13] = nje;
-  iwork[14] = nqu;
-  iwork[15] = nq;
-  iwork[19] = nnz;
-  iwork[20] = ngp;
-  iwork[21] = nlu;
-  iwork[25] = nzl;
-  iwork[26] = nzu;
+  i__1 = IGS.n;
+  for (i = 1; i <= i__1; ++i) y[i] = rwork[i + IGS.lyh - 1];
+  *t = IGS.tn;
+  IGS.illin = 0;
+  rwork[11] = IGS.hu;
+  rwork[12] = IGS.h;
+  rwork[13] = IGS.tn;
+  iwork[11] = IGS.nst;
+  iwork[12] = IGS.nfe;
+  iwork[13] = IGS.nje;
+  iwork[14] = IGS.nqu;
+  iwork[15] = IGS.nq;
+  iwork[19] = IGS.nnz;
+  iwork[20] = IGS.ngp;
+  iwork[21] = IGS.nlu;
+  iwork[25] = IGS.nzl;
+  iwork[26] = IGS.nzu;
   return 0;
 
   /* ---------------------------------------------------------------------------
@@ -1931,199 +1902,180 @@ L580:
      the run is halted.
   */
 L601:
-  xerrwv ("lsodes-- istate (=i1) illegal ", 0, 1, *istate, 0, 0, 0.0, 0.0);
+  printf ("lsodes: istate = %ld is illegal.\n", *istate);
   goto L700;
 
 L602:
-  xerrwv ("lsodes-- itask (=i1) illegal  ", 0, 1, *itask, 0, 0, 0.0, 0.0);
+  printf ("lsodes: itask = %ld illegal.\n", *itask);
   goto L700;
 
 L603:
-  xerrwv ("lsodes-- istate .gt. 1 but lsodes not initialized ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
+  printf ("lsodes: istate is > 1 but lsodes is not initialized.\n");
   goto L700;
 
 L604:
-  xerrwv ("lsodes-- neq (=i1) .lt. 1     ", 0, 1, neq[1], 0, 0, 0.0, 0.0);
+  printf ("lsodes: neq = %ld is lower than 1.\n", neq[1]);
   goto L700;
 
 L605:
-  xerrwv ("lsodes-- istate = 3 and neq increased (i1 to i2)  ",
-          0, 2, n, neq[1], 0, 0.0, 0.0);
+  printf ("lsodes: istate = 3 and neq increased from %ld to %ld.\n",
+          IGS.n, neq[1]);
   goto L700;
 
 L606:
-  xerrwv ("lsodes-- itol (=i1) illegal   ", 0, 1, *itol, 0, 0, 0.0, 0.0);
+  printf ("lsodes: itol = %ld is illegal.\n", *itol);
   goto L700;
 
 L607:
-  xerrwv ("lsodes-- iopt (=i1) illegal   ", 0, 1, *iopt, 0, 0, 0.0, 0.0);
+  printf ("lsodes: iopt = %ld is illegal.\n", *iopt);
   goto L700;
 
 L608:
-  xerrwv ("lsodes-- mf (=i1) illegal     ", 0, 1, *mf, 0, 0, 0.0, 0.0);
+  printf ("lsodes: mf = %ld is illegal.\n", *mf);
   goto L700;
 
 L609:
-  xerrwv ("lsodes-- seth (=r1) .lt. 0.0  ", 0, 0, 0, 0, 1, seth, 0.0);
+  printf ("lsodes: seth = %21.13f is lower than 0.\n", IGS.seth);
   goto L700;
 
 L611:
-  xerrwv ("lsodes-- maxord (=i1) .lt. 0  ", 0, 1, maxord, 0, 0, 0.0, 0.0);
+  printf ("lsodes: maxord = %ld is lower than 0.\n", IGS.maxord);
   goto L700;
 
 L612:
-  xerrwv ("lsodes-- mxstep (=i1) .lt. 0  ", 0, 1, mxstep, 0, 0, 0.0, 0.0);
+  printf ("lsodes: mxstep = %ld is lower than 0.\n", IGS.mxstep);
   goto L700;
 
 L613:
-  xerrwv ("lsodes-- mxhnil (=i1) .lt. 0  ", 0, 1, mxhnil, 0, 0, 0.0, 0.0);
+  printf ("lsodes: mxhnil = %ld is lower than 0.\n", IGS.mxhnil);
   goto L700;
 
 L614:
-  xerrwv ("lsodes-- tout (=r1) behind t (=r2)      ",
-          0, 0, 0, 0, 2, *tout, *t);
-  xerrwv ("         integration direction is given by h0 (=r1)  ",
-          0, 0, 0, 0, 1, h0, 0.0);
+  printf ("lsodes: tout = %21.13f is behind t = %21.13f\n", *tout, *t);
+  printf ("        while integration direction is given by h0 = %21.13f.\n", h0);
   goto L700;
 
 L615:
-  xerrwv ("lsodes-- hmax (=r1) .lt. 0.0  ", 0, 0, 0, 0, 1, hmax, 0.0);
+  printf ("lsodes: hmax = %21.13f, lower than 0.\n", hmax);
   goto L700;
 
 L616:
-  xerrwv ("lsodes-- hmin (=r1) .lt. 0.0  ", 0, 0, 0, 0, 1, hmin, 0.0);
+  printf ("lsodes: hmin = %21.13f, lower than 0.\n", IGS.hmin);
   goto L700;
 
 L617:
-  xerrwv ("lsodes-- rwork length is insufficient to proceed. ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         length needed is .ge. lenrw (=i1), exceeds lrw (=i2)",
-          0, 2, lenrw, *lrw, 0, 0.0, 0.0);
+  printf ("lsodes: rwork length is insufficient to proceed,\n "
+          "        length needed is at least %ld, exceeds liw (= %ld).\n",
+          lenrw, *lrw);
   goto L700;
 
 L618:
-  xerrwv ("lsodes-- iwork length is insufficient to proceed. ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         length needed is .ge. leniw (=i1), exceeds liw (=i2)",
-          0, 2, leniw, *liw, 0, 0.0, 0.0);
+  printf ("lsodes: iwork length is insufficient to proceed,\n "
+          "        length needed is at least %ld, exceeds liw (= %ld).\n",
+          leniw, *liw);
   goto L700;
 
 L619:
-  xerrwv ("lsodes-- rtol(i1) is r1 .lt. 0.0        ",
-          0, 1, i, 0, 1, rtoli, 0.0);
+  printf ("lsodes: rtol[%ld] = %21.13f, lower than 0.\n", i, rtoli);
   goto L700;
 
 L620:
-  xerrwv ("lsodes-- atol(i1) is r1 .lt. 0.0        ",
-          0, 1, i, 0, 1, atoli, 0.0);
+  printf ("lsodes: atol[%ld] = %21.13f, lower than 0.\n", i, atoli);
   goto L700;
 
 L621:
-  ewti = rwork[lewt + i - 1];
-  xerrwv ("lsodes-- ewt(i1) is r1 .le. 0.0         ",
-          0, 1, i, 0, 1, ewti, 0.0);
+  ewti = rwork[IGS.lewt + i - 1];
+  printf ("lsodes: ewt[%ld] = %21.13f, lower or equal to 0.\n", i, ewti);
   goto L700;
 
 L622:
-  xerrwv ("lsodes-- tout (=r1) too close to t(=r2) to start integration",
-          0, 0, 0, 0, 2, *tout, *t);
+  printf ("lsodes: tout = %21.13f too close to t = %21.13f to start integration.\n",
+          *tout, *t);
   goto L700;
 
 L623:
-  xerrwv ("lsodes-- itask = i1 and tout (=r1) behind tcur - hu (= r2)  ",
-          0, 1, *itask, 0, 2, *tout, tp);
+  printf ("lsodes: itask = %ld and tout = %21.13f is behind tcur - hu (= %21.13f).\n",
+          *itask, *tout, tp);
   goto L700;
 
 L624:
-  xerrwv ("lsodes-- itask = 4 or 5 and tcrit (=r1) behind tcur (=r2)   ",
-          0, 0, 0, 0, 2, tcrit, tn);
+  printf ("lsodes: itask = 4 or 5 and tcrit = %21.13f, behind tcur (= %21.13f).\n",
+          tcrit, IGS.tn);
   goto L700;
 
 L625:
-  xerrwv ("lsodes-- itask = 4 or 5 and tcrit (=r1) behind tout (=r2)   ",
-          0, 0, 0, 0, 2, tcrit, *tout);
+  printf ("lsodes: itask = 4 or 5 and tcrit = %21.13f, behind tout = %21.13f.\n",
+          tcrit, *tout);
   goto L700;
 
 L626:
-  xerrwv ("lsodes-- at start of problem, too much accuracy   ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         requested for precision of machine..  see tolsf (=r1) ",
-          0, 0, 0, 0, 1, tolsf, 0.0);
+  printf ("lsodes: at start of the problem, too much accuracy requested\n"
+          "        for precision of machine (tolsf = %21.13f).\n",
+          tolsf);
   rwork[14] = tolsf;
   goto L700;
 
 L627:
-  xerrwv ("lsodes-- trouble from intdy. itask = i1, tout = r1",
-          0, 1, *itask, 0, 1, *tout, 0.0);
+  printf ("lsodes: trouble from intdy. itask = %ld, tout = %21.13f.\n",
+          *itask, *tout);
   goto L700;
 
 L628:
-  xerrwv ("lsodes-- rwork length insufficient (for subroutine prep).   ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         length needed is .ge. lenrw (=i1), exceeds lrw (=i2)",
-          0, 2, lenrw, *lrw, 0, 0.0, 0.0);
+  printf ("lsodes: rwork length insufficient (for subroutine prep),\n"
+          "        length needed is at least %ld, exceeds lrw (= %ld).\n",
+          lenrw, *lrw);
   goto L700;
 
 L629:
-  xerrwv ("lsodes-- rwork length insufficient (for subroutine jgroup). ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         length needed is .ge. lenrw (=i1), exceeds lrw (=i2)",
-          0, 2, lenrw, *lrw, 0, 0.0, 0.0);
+  printf ("lsodes: rwork length insufficient (for subroutine jgroup),\n"
+          "        length needed is at least %ld, exceeds lrw (= %ld).\n",
+          lenrw, *lrw);
   goto L700;
 
 L630:
-  xerrwv ("lsodes-- rwork length insufficient (for subroutine odrv).   ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         length needed is .ge. lenrw (=i1), exceeds lrw (=i2)",
-          0, 2, lenrw, *lrw, 0, 0.0, 0.0);
+  printf ("lsodes: rwork length insufficient (for subroutine odrv),\n"
+          "        length needed is at least %ld, exceeds lrw (= %ld).\n",
+          lenrw, *lrw);
   goto L700;
 
 L631:
-  xerrwv ("lsodes-- error from odrv in yale sparse matrix package      ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  imul = (iys - 1) / n;
-  irem = iys - imul * n;
-  xerrwv ("         at t (=r1), odrv returned error flag = i1*neq + i2.   ",
-          0, 2, imul, irem, 1, tn, 0.0);
+  imul = (IGS.iys - 1) / IGS.n;
+  irem = IGS.iys - imul * IGS.n;
+  printf ("lsodes: error from odrv in yale sparse matrix package,\n"
+          "        at t = %21.13f, odrv returned error flag = %ld*neq + %ld:\n",
+          IGS.tn, imul, irem);
   goto L700;
 
 L632:
-  xerrwv ("lsodes-- rwork length insufficient (for subroutine cdrv).   ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  xerrwv ("         length needed is .ge. lenrw (=i1), exceeds lrw (=i2)",
-          0, 2, lenrw, *lrw, 0, 0.0, 0.0);
+  printf ("lsodes: rwork length insufficient (for subroutine cdrv),\n"
+          "        length needed is at least %ld, exceeds lrw (= %ld).\n",
+          lenrw, *lrw);
   goto L700;
 
 L633:
-  xerrwv ("lsodes-- error from cdrv in yale sparse matrix package      ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
-  imul = (iys - 1) / n;
-  irem = iys - imul * n;
-  xerrwv ("         at t (=r1), cdrv returned error flag = i1*neq + i2.   ",
-          0, 2, imul, irem, 1, tn, 0.0);
+  printf ("lsodes: error from cdrv in yale sparse matrix package,\n");
+  imul = (IGS.iys - 1) / IGS.n;
+  irem = IGS.iys - imul * IGS.n;
+  printf ("        at t =%21.13f, cdrv returned error flag = %ld*neq + %ld:\n",
+          IGS.tn, imul, irem);
   if (imul == 2)
-    xerrwv ("         duplicate entry in sparsity structure descriptors   ",
-            0, 0, 0, 0, 0, 0.0, 0.0);
-
+    printf ("        duplicate entry in sparsity structure descriptors.\n");
   if (imul == 3 || imul == 6)
-    xerrwv ("         insufficient storage for nsfc (called by cdrv)      ",
-            0, 0, 0, 0, 0, 0.0, 0.0);
+    printf ("        insufficient storage for nsfc (called by cdrv).\n");
 
 L700:
-  if (illin == 5) goto L710;
+  if (IGS.illin == 5) goto L710;
 
-  ++illin;
+  ++IGS.illin;
   *istate = -3;
   return 0;
 
 L710:
-  xerrwv ("lsodes-- repeated occurrences of illegal input    ",
-          0, 0, 0, 0, 0, 0.0, 0.0);
+  printf ("lsodes: repeated occurrences of illegal input.\n");
 
 L800:
-  xerrwv ("lsodes-- run aborted.. apparent infinite loop     ",
-          2, 0, 0, 0, 0, 0.0, 0.0);
+  printf ("lsodes: run aborted, apparent infinite loop.\n\n");
+  abort();
 
   return 0;
 
@@ -2175,30 +2127,29 @@ int slss_(double *wk, long *iwk, double *x, double *tem)
   --wk;
 
   /* Function Body */
-  iersl = 0;
-  switch (miter) {
+  IGS.iersl = 0;
+  switch (IGS.miter) {
     case 1:  goto L100;
     case 2:  goto L100;
     case 3:  goto L300;
   }
 
 L100:
-  cdrv_(&n, &iwk[ipr], &iwk[ipc], &iwk[
-        ipic], &iwk[ipian], &iwk[ipjan], &wk[
-        ipa], &x[1], &x[1], &nsp, &iwk[ipisp],
-        &wk[iprsp], &iesp, 4, &iersl);
+  cdrv_(&(IGS.n), &iwk[IGS.ipr], &iwk[IGS.ipc], &iwk[IGS.ipic], &iwk[IGS.ipian],
+        &iwk[IGS.ipjan], &wk[IGS.ipa], &x[1], &x[1], &(IGS.nsp), &iwk[IGS.ipisp],
+        &wk[IGS.iprsp], &(IGS.iesp), 4, &(IGS.iersl));
 
-  if (iersl != 0) iersl = -1;
+  if (IGS.iersl != 0) IGS.iersl = -1;
 
   return 0;
 
 L300:
   phl0 = wk[2];
-  hl0 = h * el0;
+  hl0 = IGS.h * IGS.el0;
   wk[2] = hl0;
   if (hl0 == phl0) goto L330;
   r = hl0 / phl0;
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) {
     di = 1.0 - r * (1.0 - 1.0 / wk[i + 2]);
     if (fabs(di) == 0.) goto L390;
@@ -2206,13 +2157,13 @@ L300:
   }
 
 L330:
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) x[i] = wk[i + 2] * x[i];
 
   return 0;
 
 L390:
-  iersl = 1;
+  IGS.iersl = 1;
 
   return 0;
 
@@ -2292,32 +2243,32 @@ int prjs_(long *neq, double *y, double *yh,
 
   /* Function Body */
 
-  hl0 = h * el0;
+  hl0 = IGS.h * IGS.el0;
   con = -hl0;
 
-  if (miter == 3) {
+  if (IGS.miter == 3) {
 
     /* if miter = 3, construct a diagonal approximation to j and p. */
-    jcur = 1;
-    ++nje;
+    IGS.jcur = 1;
+    ++IGS.nje;
     wk[2] = hl0;
-    ierpj = 0;
-    r = el0 * 0.1;
+    IGS.ierpj = 0;
+    r = IGS.el0 * 0.1;
 
-    for (i = 1; i <= n; ++i)
-      y[i] += r * (h * savf[i] - yh[i + (yh_dim1 << 1)]);
+    for (i = 1; i <= IGS.n; ++i)
+      y[i] += r * (IGS.h * savf[i] - yh[i + (yh_dim1 << 1)]);
 
-    CalcDeriv (&y[1], &wk[3], &tn);
+    CalcDeriv (&y[1], &wk[3], &(IGS.tn));
 
-    ++nfe;
-    for (i = 1; i <= n; ++i) {
-      r0 = h * savf[i] - yh[i + (yh_dim1 << 1)];
-      di = r0 * 0.1 - h * (wk[i + 2] - savf[i]);
+    ++IGS.nfe;
+    for (i = 1; i <= IGS.n; ++i) {
+      r0 = IGS.h * savf[i] - yh[i + (yh_dim1 << 1)];
+      di = r0 * 0.1 - IGS.h * (wk[i + 2] - savf[i]);
       wk[i + 2] = 1.0;
 
-      if ( fabs(r0) >= (uround / ewt[i])) {
+      if ( fabs(r0) >= (IGS.uround / ewt[i])) {
         if (fabs(di) == 0.0) {
-          ierpj = 2;
+          IGS.ierpj = 2;
           return 0;
         }
         wk[i + 2] = r0 * 0.1 / di;
@@ -2332,44 +2283,44 @@ int prjs_(long *neq, double *y, double *yh,
 
   /* see whether j should be reevaluated (jok = 0) or not (jok = 1). */
   jok = 1;
-  if (nst == 0 || nst >= nslj + msbj)
+  if (IGS.nst == 0 || IGS.nst >= IGS.nslj + IGS.msbj)
     jok = 0;
 
-  if ((icf == 1) && (fabs(rc - 1) < ccmxj)) jok = 0;
+  if ((IGS.icf == 1) && (fabs(IGS.rc - 1) < IGS.ccmxj)) jok = 0;
 
-  if (icf == 2) jok = 0;
+  if (IGS.icf == 2) jok = 0;
 
   if (jok == 1) goto L250;
 
 L20:
   /* miter = 1 or 2, and the jacobian is to be reevaluated. */
-  jcur = 1;
-  ++nje;
-  nslj = nst;
-  iplost = 0;
-  conmin = fabs(con);
-  switch (miter) {
+  IGS.jcur = 1;
+  ++IGS.nje;
+  IGS.nslj = IGS.nst;
+  IGS.iplost = 0;
+  IGS.conmin = fabs(con);
+  switch (IGS.miter) {
     case 1:  goto L100;
     case 2:  goto L200;
   }
 
 L100:
   /* if miter = 1, call jac, multiply by scalar, and add identity. */
-  kmin = iwk[ipian];
-  i__1 = n;
+  kmin = iwk[IGS.ipian];
+  i__1 = IGS.n;
   for (j = 1; j <= i__1; ++j) {
-    kmax = iwk[ipian + j] - 1;
+    kmax = iwk[IGS.ipian + j] - 1;
 
-    for (i = 1; i <= n; ++i)
+    for (i = 1; i <= IGS.n; ++i)
       ftem[i] = 0.0;
 
-    CalcJacob (&tn, &y[1], j, &ftem[1]);
+    CalcJacob (&(IGS.tn), &y[1], j, &ftem[1]);
 
     i__2 = kmax;
     for (k = kmin; k <= i__2; ++k) {
-      i = iwk[ibjan + k];
-      wk[iba + k] = ftem[i] * con;
-      if (i == j) wk[iba + k] += 1.0;
+      i = iwk[IGS.ibjan + k];
+      wk[IGS.iba + k] = ftem[i] * con;
+      if (i == j) wk[IGS.iba + k] += 1.0;
     } /* end for */
 
     kmin = kmax + 1;
@@ -2379,19 +2330,18 @@ L100:
 
 L200:
   /* if miter = 2, make ngp calls to f to approximate j and p */
-  fac = vnorm_(&n, &savf[1], &ewt[1]);
-  r0 = fabs(h) * 1e3 * uround * (double) n *
-       fac;
+  fac = vnorm_(&(IGS.n), &savf[1], &ewt[1]);
+  r0 = fabs(IGS.h) * 1e3 * IGS.uround * (double) IGS.n * fac;
   if (r0 == 0.) r0 = 1.0;
 
   srur = wk[1];
-  jmin = iwk[ipigp];
-  i__1 = ngp;
+  jmin = iwk[IGS.ipigp];
+  i__1 = IGS.ngp;
   for (ng = 1; ng <= i__1; ++ng) {
-    jmax = iwk[ipigp + ng] - 1;
+    jmax = iwk[IGS.ipigp + ng] - 1;
     i__2 = jmax;
     for (j = jmin; j <= i__2; ++j) {
-      jj = iwk[ibjgp + j];
+      jj = iwk[IGS.ibjgp + j];
 
       /* Computing MAX */
       d__2 = srur * fabs(y[jj]), d__3 = r0 / ewt[jj];
@@ -2399,62 +2349,62 @@ L200:
       y[jj] += r;
     }
 
-    CalcDeriv (&y[1], &ftem[1], &tn);
+    CalcDeriv (&y[1], &ftem[1], &(IGS.tn));
 
     i__2 = jmax;
     for (j = jmin; j <= i__2; ++j) {
-      jj = iwk[ibjgp + j];
+      jj = iwk[IGS.ibjgp + j];
       y[jj] = yh[jj + yh_dim1];
 
       /* Computing MAX */
       d__2 = srur * fabs(y[jj]), d__3 = r0 / ewt[jj];
       r = mymax(d__2,d__3);
       fac = -hl0 / r;
-      kmin = iwk[ibian + jj];
-      kmax = iwk[ibian + jj + 1] - 1;
+      kmin = iwk[IGS.ibian + jj];
+      kmax = iwk[IGS.ibian + jj + 1] - 1;
       i__3 = kmax;
       for (k = kmin; k <= i__3; ++k) {
-        i = iwk[ibjan + k];
-        wk[iba + k] = (ftem[i] - savf[i]) * fac;
-        if (i == jj) wk[iba + k] += 1.0;
+        i = iwk[IGS.ibjan + k];
+        wk[IGS.iba + k] = (ftem[i] - savf[i]) * fac;
+        if (i == jj) wk[IGS.iba + k] += 1.0;
       } /* end for */
     } /* end for */
 
     jmin = jmax + 1;
 
   }
-  nfe += ngp;
+  IGS.nfe += IGS.ngp;
   goto L290;
 
 L250:
   /* if jok = 1, reconstruct new p from old p */
-  jcur = 0;
-  rcon = con / con0;
-  rcont = fabs(con) / conmin;
-  if (rcont > rbig && iplost == 1) goto L20;
+  IGS.jcur = 0;
+  rcon = con / IGS.con0;
+  rcont = fabs(con) / IGS.conmin;
+  if (rcont > IGS.rbig && IGS.iplost == 1) goto L20;
 
-  kmin = iwk[ipian];
-  i__1 = n;
+  kmin = iwk[IGS.ipian];
+  i__1 = IGS.n;
   for (j = 1; j <= i__1; ++j) {
-    kmax = iwk[ipian + j] - 1;
+    kmax = iwk[IGS.ipian + j] - 1;
     i__2 = kmax;
     for (k = kmin; k <= i__2; ++k) {
-      i = iwk[ibjan + k];
-      pij = wk[iba + k];
+      i = iwk[IGS.ibjan + k];
+      pij = wk[IGS.iba + k];
       if (i != j) goto L260;
       pij += -1.;
-      if (fabs(pij) >= psmall) goto L260;
-      iplost = 1;
+      if (fabs(pij) >= IGS.psmall) goto L260;
+      IGS.iplost = 1;
 
       /* Computing MIN */
-      d__1 = fabs(con0);
-      conmin = mymin(d__1,conmin);
+      d__1 = fabs(IGS.con0);
+      IGS.conmin = mymin(d__1,IGS.conmin);
 
 L260:
       pij *= rcon;
       if (i == j) pij += 1.0;
 
-      wk[iba + k] = pij;
+      wk[IGS.iba + k] = pij;
 
     } /* end for k */
     kmin = kmax + 1;
@@ -2463,25 +2413,25 @@ L260:
 
 L290:
   /* do numerical factorization of p matrix */
-  ++nlu;
-  con0 = con;
-  ierpj = 0;
-  i__1 = n;
+  ++IGS.nlu;
+  IGS.con0 = con;
+  IGS.ierpj = 0;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i) ftem[i] = 0.0;
 
-  cdrv_(&n, &iwk[ipr], &iwk[ipc],
-        &iwk[ipic], &iwk[ipian], &iwk[ipjan],
-        &wk[ipa], &ftem[1], &ftem[1], &nsp,
-        &iwk[ipisp], &wk[iprsp], &iesp, 2,
-        &iys);
+  cdrv_(&(IGS.n), &iwk[IGS.ipr], &iwk[IGS.ipc],
+        &iwk[IGS.ipic], &iwk[IGS.ipian], &iwk[IGS.ipjan],
+        &wk[IGS.ipa], &ftem[1], &ftem[1], &(IGS.nsp),
+        &iwk[IGS.ipisp], &wk[IGS.iprsp], &(IGS.iesp), 2,
+        &(IGS.iys));
 
-  if (iys == 0) return 0;
+  if (IGS.iys == 0) return 0;
 
-  imul = (iys - 1) / n;
-  ierpj = -2;
-  if (imul == 8) ierpj = 1;
+  imul = (IGS.iys - 1) / IGS.n;
+  IGS.ierpj = -2;
+  if (imul == 8) IGS.ierpj = 1;
 
-  if (imul == 10) ierpj = -1;
+  if (imul == 10) IGS.ierpj = -1;
 
   return 0;
 
@@ -2596,38 +2546,38 @@ int stode_(long *neq, double *y, double *yh,
   yh -= yh_offset;
 
   /* Function Body */
-  kflag = 0;
-  told = tn;
+  IGS.kflag = 0;
+  told = IGS.tn;
   ncf = 0;
-  ierpj = 0;
-  iersl = 0;
-  jcur = 0;
-  icf = 0;
+  IGS.ierpj = 0;
+  IGS.iersl = 0;
+  IGS.jcur = 0;
+  IGS.icf = 0;
   delp = 0.;
-  if (jstart > 0) goto L200;
-  if (jstart == -1) goto L100;
-  if (jstart == -2) goto L160;
+  if (IGS.jstart > 0) goto L200;
+  if (IGS.jstart == -1) goto L100;
+  if (IGS.jstart == -2) goto L160;
 
   /* --------------------------------------------------------------------------
      on the first call, the order is set to 1, and other variables are
-     initialized.  rmax is the maximum ratio by which h can be increased
+     initialized. rmax is the maximum ratio by which h can be increased
      in a single step.  it is initially 1.e4 to compensate for the small
      initial h, but then is normally equal to 10.  if a failure
      occurs (in corrector convergence or error test), rmax is set at 2
      for the next increase.
   */
-  lmax = maxord + 1;
-  nq = 1;
-  l = 2;
-  ialth = 2;
-  rmax = 1e4;
-  rc = 0.;
-  el0 = 1.;
-  crate = .7;
-  hold = h;
-  meo = meth;
-  nslp = 0;
-  ipup = miter;
+  IGS.lmax = IGS.maxord + 1;
+  IGS.nq = 1;
+  IGS.l = 2;
+  IGS.ialth = 2;
+  IGS.rmax = 1e4;
+  IGS.rc = 0.;
+  IGS.el0 = 1.;
+  IGS.crate = .7;
+  IGS.hold = IGS.h;
+  IGS.meo = IGS.meth;
+  IGS.nslp = 0;
+  IGS.ipup = IGS.miter;
   iret = 3;
   goto L140;
 
@@ -2645,48 +2595,48 @@ L100:
      if h or meth is being changed, ialth is reset to l = nq + 1
      to prevent further changes in h for that many steps.
   */
-  ipup = miter;
-  lmax = maxord + 1;
-  if (ialth == 1) ialth = 2;
+  IGS.ipup = IGS.miter;
+  IGS.lmax = IGS.maxord + 1;
+  if (IGS.ialth == 1) IGS.ialth = 2;
 
-  if (meth == meo) goto L110;
+  if (IGS.meth == IGS.meo) goto L110;
 
-  cfode_(&meth, elco, tesco);
+  cfode_(&(IGS.meth), IGS.elco, IGS.tesco);
 
-  meo = meth;
-  if (nq > maxord) goto L120;
+  IGS.meo = IGS.meth;
+  if (IGS.nq > IGS.maxord) goto L120;
 
-  ialth = l;
+  IGS.ialth = IGS.l;
   iret = 1;
   goto L150;
 
 L110:
-  if (nq <= maxord) goto L160;
+  if (IGS.nq <= IGS.maxord) goto L160;
 
 L120:
-  nq = maxord;
-  l = lmax;
-  i__1 = l;
+  IGS.nq = IGS.maxord;
+  IGS.l = IGS.lmax;
+  i__1 = IGS.l;
   for (i = 0; i < i__1; ++i)
-    el[i] = elco[i + nq * 13 - 13];
+    IGS.el[i] = IGS.elco[i + IGS.nq * 13 - 13];
 
-  nqnyh = nq * *nyh;
-  rc = rc * el[0] / el0;
-  el0 = el[0];
-  conit = 0.5 / (double) (nq + 2);
-  ddn = vnorm_(&n, &savf[1], &ewt[1]) /
-               tesco[l * 3 - 3];
+  IGS.nqnyh = IGS.nq * *nyh;
+  IGS.rc = IGS.rc * IGS.el[0] / IGS.el0;
+  IGS.el0 = IGS.el[0];
+  IGS.conit = 0.5 / (double) (IGS.nq + 2);
+  ddn = vnorm_(&(IGS.n), &savf[1], &ewt[1]) /
+               IGS.tesco[IGS.l * 3 - 3];
 
-  exdn = 1.0 / (double) l;
+  exdn = 1.0 / (double) IGS.l;
   rhdn = 1.0 / (pow(ddn, exdn) * 1.3 + 1.3e-6);
   rh = mymin(rhdn,1.0);
   iredo = 3;
-  if (h == hold) goto L170;
+  if (IGS.h == IGS.hold) goto L170;
 
   /* Computing MIN */
-  d__3 = fabs(h / hold);
+  d__3 = fabs(IGS.h / IGS.hold);
   rh = mymin(rh,d__3);
-  h = hold;
+  IGS.h = IGS.hold;
   goto L175;
 
 L140:
@@ -2695,17 +2645,17 @@ L140:
      current meth.  then the el vector and related constants are reset
      whenever the order nq is changed, or at the start of the problem.
   */
-  cfode_(&meth, elco, tesco);
+  cfode_(&(IGS.meth), IGS.elco, IGS.tesco);
 
 L150:
-  i__1 = l;
+  i__1 = IGS.l;
   for (i = 1; i <= i__1; ++i)
-    el[i - 1] = elco[i + nq * 13 - 14];
+    IGS.el[i - 1] = IGS.elco[i + IGS.nq * 13 - 14];
 
-  nqnyh = nq * *nyh;
-  rc = rc * el[0] / el0;
-  el0 = el[0];
-  conit = 0.5 / (double) (nq + 2);
+  IGS.nqnyh = IGS.nq * *nyh;
+  IGS.rc = IGS.rc * IGS.el[0] / IGS.el0;
+  IGS.el0 = IGS.el[0];
+  IGS.conit = 0.5 / (double) (IGS.nq + 2);
   switch (iret) {
     case 1:  goto L160;
     case 2:  goto L170;
@@ -2719,35 +2669,35 @@ L160:
      l = nq + 1 to prevent a change of h for that many steps, unless
      forced by a convergence or error test failure.
    */
-  if (h == hold) goto L200;
+  if (IGS.h == IGS.hold) goto L200;
 
-  rh = h / hold;
-  h = hold;
+  rh = IGS.h / IGS.hold;
+  IGS.h = IGS.hold;
   iredo = 3;
   goto L175;
 
 L170:
   /* Computing MAX */
-  d__2 = hmin / fabs(h);
+  d__2 = IGS.hmin / fabs(IGS.h);
   rh = mymax(rh,d__2);
 
 L175:
-  rh = mymin(rh,rmax);
+  rh = mymin(rh,IGS.rmax);
 
   /* Computing MAX */
-  d__2 = fabs(h) * hmxi * rh;
+  d__2 = fabs(IGS.h) * IGS.hmxi * rh;
   rh /= mymax(1.0,d__2);
   r = 1.0;
-  i__1 = l;
+  i__1 = IGS.l;
   for (j = 2; j <= i__1; ++j) {
     r *= rh;
-    for (i = 1; i <= n; ++i)
+    for (i = 1; i <= IGS.n; ++i)
       yh[i + j * yh_dim1] *= r;
   }
 
-  h *= rh;
-  rc *= rh;
-  ialth = l;
+  IGS.h *= rh;
+  IGS.rc *= rh;
+  IGS.ialth = IGS.l;
   if (iredo == 0) goto L690;
 
 L200:
@@ -2759,18 +2709,18 @@ L200:
      to force pjac to be called, if a jacobian is involved.
      in any case, pjac is called at least every msbp steps.
   */
-  if (fabs(rc - 1) > ccmax)
-    ipup = miter;
+  if (fabs(IGS.rc - 1) > IGS.ccmax)
+    IGS.ipup = IGS.miter;
 
-  if (nst >= nslp + msbp)
-    ipup = miter;
+  if (IGS.nst >= IGS.nslp + IGS.msbp)
+    IGS.ipup = IGS.miter;
 
-  tn += h;
-  i1 = nqnyh + 1;
-  i__2 = nq;
+  IGS.tn += IGS.h;
+  i1 = IGS.nqnyh + 1;
+  i__2 = IGS.nq;
   for (jb = 1; jb <= i__2; ++jb) {
     i1 -= *nyh;
-    i__1 = nqnyh;
+    i__1 = IGS.nqnyh;
     for (i = i1; i <= i__1; ++i) yh1[i] += yh1[i + *nyh];
   }
 
@@ -2782,13 +2732,13 @@ L220:
      vector acor(i).  the yh array is not altered in the corrector loop.
   */
   m = 0;
-  i__2 = n;
+  i__2 = IGS.n;
   for (i = 1; i <= i__2; ++i) y[i] = yh[i + yh_dim1];
 
-  CalcDeriv (&y[1], &savf[1], &tn);
+  CalcDeriv (&y[1], &savf[1], &(IGS.tn));
 
-  ++nfe;
-  if (ipup <= 0) goto L250;
+  ++IGS.nfe;
+  if (IGS.ipup <= 0) goto L250;
 
   /* --------------------------------------------------------------------------
      if indicated, the matrix p = i - h*el(1)*j is reevaluated and
@@ -2799,33 +2749,33 @@ L220:
   prjs_ (&neq[1], &y[1], &yh[yh_offset], nyh, &ewt[1], &acor[1], &savf[1],
          &wm[1], &iwm[1]);
 
-  ipup = 0;
-  rc = 1.0;
-  nslp = nst;
-  crate = 0.7;
-  if (ierpj != 0) goto L430;
+  IGS.ipup = 0;
+  IGS.rc = 1.0;
+  IGS.nslp = IGS.nst;
+  IGS.crate = 0.7;
+  if (IGS.ierpj != 0) goto L430;
 
 L250:
-  for (i = 1; i <= n; ++i)
+  for (i = 1; i <= IGS.n; ++i)
     acor[i] = 0.;
 
 L270:
-  if (miter != 0) goto L350;
+  if (IGS.miter != 0) goto L350;
 
   /* --------------------------------------------------------------------------
      in the case of functional iteration, update y directly from
      the result of the last function evaluation.
   */
-  i__2 = n;
+  i__2 = IGS.n;
   for (i = 1; i <= i__2; ++i) {
-    savf[i] = h * savf[i] - yh[i + (yh_dim1 << 1)];
+    savf[i] = IGS.h * savf[i] - yh[i + (yh_dim1 << 1)];
     y[i] = savf[i] - acor[i];
   }
 
-  del = vnorm_(&n, &y[1], &ewt[1]);
+  del = vnorm_(&(IGS.n), &y[1], &ewt[1]);
 
-  for (i = 1; i <= n; ++i) {
-    y[i] = yh[i + yh_dim1] + el[0] * savf[i];
+  for (i = 1; i <= IGS.n; ++i) {
+    y[i] = yh[i + yh_dim1] + IGS.el[0] * savf[i];
     acor[i] = savf[i];
   }
   goto L400;
@@ -2836,22 +2786,22 @@ L350:
      and solve the linear system with that as right-hand side and
      p as coefficient matrix.
   */
-  i__2 = n;
+  i__2 = IGS.n;
   for (i = 1; i <= i__2; ++i)
-    y[i] = h * savf[i] - (yh[i + (yh_dim1 << 1)] + acor[i]);
+    y[i] = IGS.h * savf[i] - (yh[i + (yh_dim1 << 1)] + acor[i]);
 
   slss_ (&wm[1], &iwm[1], &y[1], &savf[1]);
 
-  if (iersl < 0) goto L430;
+  if (IGS.iersl < 0) goto L430;
 
-  if (iersl > 0) goto L410;
+  if (IGS.iersl > 0) goto L410;
 
-  del = vnorm_(&n, &y[1], &ewt[1]);
+  del = vnorm_(&(IGS.n), &y[1], &ewt[1]);
 
-  i__2 = n;
+  i__2 = IGS.n;
   for (i = 1; i <= i__2; ++i) {
     acor[i] += y[i];
-    y[i] = yh[i + yh_dim1] + el[0] * acor[i];
+    y[i] = yh[i + yh_dim1] + IGS.el[0] * acor[i];
   }
 
 L400:
@@ -2861,28 +2811,28 @@ L400:
   */
   if (m != 0) {
     /* Computing MAX */
-    d__1 = crate * 0.2;
+    d__1 = IGS.crate * 0.2;
     d__2 = del / delp;
-    crate = mymax(d__1,d__2);
+    IGS.crate = mymax(d__1,d__2);
   }
 
   /* Computing MIN */
-  d__2 = crate * 1.5;
+  d__2 = IGS.crate * 1.5;
   dcon = del * mymin(1.0,d__2) /
-         (tesco[nq * 3 - 2] * conit);
+         (IGS.tesco[IGS.nq * 3 - 2] * IGS.conit);
 
   if (dcon <= 1.) goto L450;
 
   ++m;
-  if (m == maxcor) goto L410;
+  if (m == IGS.maxcor) goto L410;
 
   if (m >= 2 && del > delp * 2.0) goto L410;
 
   delp = del;
 
-  CalcDeriv (&y[1], &savf[1], &tn);
+  CalcDeriv (&y[1], &savf[1], &(IGS.tn));
 
-  ++nfe;
+  ++IGS.nfe;
   goto L270;
 
 L410:
@@ -2893,33 +2843,33 @@ L410:
      before prediction, and h is reduced, if possible.  if h cannot be
      reduced or mxncf failures have occurred, exit with kflag = -2.
   */
-  if (miter == 0 || jcur == 1) goto L430;
+  if (IGS.miter == 0 || IGS.jcur == 1) goto L430;
 
-  icf = 1;
-  ipup = miter;
+  IGS.icf = 1;
+  IGS.ipup = IGS.miter;
   goto L220;
 
 L430:
-  icf = 2;
+  IGS.icf = 2;
   ++ncf;
-  rmax = 2.0;
-  tn = told;
-  i1 = nqnyh + 1;
+  IGS.rmax = 2.0;
+  IGS.tn = told;
+  i1 = IGS.nqnyh + 1;
 
-  for (jb = 1; jb <= nq; ++jb) {
+  for (jb = 1; jb <= IGS.nq; ++jb) {
     i1 -= *nyh;
-    for (i = i1; i <= nqnyh; ++i) 
+    for (i = i1; i <= IGS.nqnyh; ++i) 
       yh1[i] -= yh1[i + *nyh];
   }
 
-  if (ierpj < 0 || iersl < 0) goto L680;
+  if (IGS.ierpj < 0 || IGS.iersl < 0) goto L680;
 
-  if (fabs(h) <= hmin * 1.00001) goto L670;
+  if (fabs(IGS.h) <= IGS.hmin * 1.00001) goto L670;
 
-  if (ncf == mxncf) goto L670;
+  if (ncf == IGS.mxncf) goto L670;
 
   rh = 0.25;
-  ipup = miter;
+  IGS.ipup = IGS.miter;
   iredo = 1;
   goto L170;
 
@@ -2930,13 +2880,12 @@ L450:
      the local error test is made and control passes to statement 500
      if it fails.
    */
-  jcur = 0;
+  IGS.jcur = 0;
   if (m == 0)
-    dsm = del / tesco[nq * 3 - 2];
+    dsm = del / IGS.tesco[IGS.nq * 3 - 2];
 
   if (m > 0)
-    dsm = vnorm_(&n, &acor[1], &ewt[1]) /
-          tesco[nq * 3 - 2];
+    dsm = vnorm_(&(IGS.n), &acor[1], &ewt[1]) / IGS.tesco[IGS.nq * 3 - 2];
 
   if (dsm > 1.0) goto L500;
 
@@ -2951,23 +2900,23 @@ L450:
      factor of at least 1.1.  if not, ialth is set to 3 to prevent
      testing for that many steps.
   */
-  kflag = 0;
+  IGS.kflag = 0;
   iredo = 0;
-  ++nst;
-  hu = h;
-  nqu = nq;
-  for (j = 1; j <= l; ++j) {
-    for (i = 1; i <= n; ++i)
-      yh[i + j * yh_dim1] += el[j - 1] * acor[i];
+  ++IGS.nst;
+  IGS.hu = IGS.h;
+  IGS.nqu = IGS.nq;
+  for (j = 1; j <= IGS.l; ++j) {
+    for (i = 1; i <= IGS.n; ++i)
+      yh[i + j * yh_dim1] += IGS.el[j - 1] * acor[i];
   }
 
-  --ialth;
-  if (ialth == 0) goto L520;
-  if (ialth > 1)  goto L700;
-  if (l == lmax)  goto L700;
+  --IGS.ialth;
+  if (IGS.ialth == 0) goto L520;
+  if (IGS.ialth > 1)  goto L700;
+  if (IGS.l == IGS.lmax)  goto L700;
 
-  for (i = 1; i <= n; ++i)
-    yh[i + lmax * yh_dim1] = acor[i];
+  for (i = 1; i <= IGS.n; ++i)
+    yh[i + IGS.lmax * yh_dim1] = acor[i];
 
   goto L700;
 
@@ -2979,20 +2928,20 @@ L500:
      one lower order.  after 2 or more failures, h is forced to decrease
      by a factor of 0.2 or less.
   */
-  --kflag;
-  tn = told;
-  i1 = nqnyh + 1;
-  i__1 = nq;
+  --IGS.kflag;
+  IGS.tn = told;
+  i1 = IGS.nqnyh + 1;
+  i__1 = IGS.nq;
   for (jb = 1; jb <= i__1; ++jb) {
     i1 -= *nyh;
-    i__2 = nqnyh;
+    i__2 = IGS.nqnyh;
     for (i = i1; i <= i__2; ++i) yh1[i] -= yh1[i + *nyh];
   }
 
-  rmax = 2.0;
-  if (fabs(h) <= hmin * 1.00001) goto L660;
+  IGS.rmax = 2.0;
+  if (fabs(IGS.h) <= IGS.hmin * 1.00001) goto L660;
 
-  if (kflag <= -3) goto L640;
+  if (IGS.kflag <= -3) goto L640;
 
   iredo = 2;
   rhup = 0.0;
@@ -3009,29 +2958,28 @@ L520:
      additional scaled derivative.
   */
   rhup = 0.0;
-  if (l == lmax) goto L540;
+  if (IGS.l == IGS.lmax) goto L540;
 
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i)
-    savf[i] = acor[i] - yh[i + lmax * yh_dim1];
+    savf[i] = acor[i] - yh[i + IGS.lmax * yh_dim1];
 
-  dup = vnorm_(&n, &savf[1], &ewt[1]) /
-               tesco[nq * 3 - 1];
+  dup = vnorm_(&(IGS.n), &savf[1], &ewt[1]) / IGS.tesco[IGS.nq * 3 - 1];
 
-  exup = 1.0 / (double) (l + 1);
+  exup = 1.0 / (double) (IGS.l + 1);
   rhup = 1.0 / (pow(dup, exup) * 1.4 + 1.4e-6);
 
 L540:
-  exsm = 1.0 / (double) l;
+  exsm = 1.0 / (double) IGS.l;
   rhsm = 1.0 / (pow(dsm, exsm) * 1.2 + 1.2e-6);
   rhdn = 0.0;
 
-  if (nq == 1) goto L560;
+  if (IGS.nq == 1) goto L560;
 
-  ddn = vnorm_(&n, &yh[l * yh_dim1 + 1], &ewt[1]) /
-        tesco[nq * 3 - 3];
+  ddn = vnorm_(&(IGS.n), &yh[IGS.l * yh_dim1 + 1],
+               &ewt[1]) / IGS.tesco[IGS.nq * 3 - 3];
 
-  exdn = 1.0 / (double) nq;
+  exdn = 1.0 / (double) IGS.nq;
   rhdn = 1.0 / (pow(ddn, exdn) * 1.3 + 1.3e-6);
 
 L560:
@@ -3044,48 +2992,48 @@ L560:
 L570:
   if (rhsm < rhdn) goto L580;
 
-  newq = nq;
+  newq = IGS.nq;
   rh = rhsm;
   goto L620;
 
 L580:
-  newq = nq - 1;
+  newq = IGS.nq - 1;
   rh = rhdn;
-  if (kflag < 0 && rh > 1.0) rh = 1.0;
+  if (IGS.kflag < 0 && rh > 1.0) rh = 1.0;
 
   goto L620;
 
 L590:
-  newq = l;
+  newq = IGS.l;
   rh = rhup;
   if (rh < 1.1) goto L610;
 
-  r = el[l - 1] / (double) l;
-  i__1 = n;
+  r = IGS.el[IGS.l - 1] / (double) IGS.l;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i)
     yh[i + (newq + 1) * yh_dim1] = acor[i] * r;
 
   goto L630;
 
 L610:
-  ialth = 3;
+  IGS.ialth = 3;
   goto L700;
 
 L620:
-  if (kflag == 0 && rh < 1.1) goto L610;
+  if (IGS.kflag == 0 && rh < 1.1) goto L610;
 
-  if (kflag <= -2) rh = mymin(rh,0.2);
+  if (IGS.kflag <= -2) rh = mymin(rh,0.2);
 
   /* --------------------------------------------------------------------------
      if there is a change of order, reset nq, l, and the coefficients.
      in any case h is reset according to rh and the yh array is rescaled.
      then exit from 690 if the step was ok, or redo the step otherwise.
   */
-  if (newq == nq) goto L170;
+  if (newq == IGS.nq) goto L170;
 
 L630:
-  nq = newq;
-  l = nq + 1;
+  IGS.nq = newq;
+  IGS.l = IGS.nq + 1;
   iret = 2;
   goto L150;
 
@@ -3099,27 +3047,27 @@ L640:
      h is reduced by a factor of 10, and the step is retried,
      until it succeeds or h reaches hmin.
   */
-  if (kflag == -10) goto L660;
+  if (IGS.kflag == -10) goto L660;
 
   /* Computing MAX */
-  d__1 = hmin / fabs(h);
+  d__1 = IGS.hmin / fabs(IGS.h);
   rh = mymax(d__1, 0.1);
-  h *= rh;
-  for (i = 1; i <= n; ++i) 
+  IGS.h *= rh;
+  for (i = 1; i <= IGS.n; ++i) 
     y[i] = yh[i + yh_dim1];
 
-  CalcDeriv (&y[1], &savf[1], &tn);
+  CalcDeriv (&y[1], &savf[1], &(IGS.tn));
 
-  ++nfe;
-  for (i = 1; i <= n; ++i)
-    yh[i + (yh_dim1 << 1)] = h * savf[i];
+  ++IGS.nfe;
+  for (i = 1; i <= IGS.n; ++i)
+    yh[i + (yh_dim1 << 1)] = IGS.h * savf[i];
 
-  ipup = miter;
-  ialth = 5;
-  if (nq == 1) goto L200;
+  IGS.ipup = IGS.miter;
+  IGS.ialth = 5;
+  if (IGS.nq == 1) goto L200;
 
-  nq = 1;
-  l = 2;
+  IGS.nq = 1;
+  IGS.l = 2;
   iret = 3;
   goto L150;
 
@@ -3128,28 +3076,28 @@ L640:
      to allow the caller to change h on the next step.
   */
 L660:
-  kflag = -1;
+  IGS.kflag = -1;
   goto L720;
 
 L670:
-  kflag = -2;
+  IGS.kflag = -2;
   goto L720;
 
 L680:
-  kflag = -3;
+  IGS.kflag = -3;
   goto L720;
 
 L690:
-  rmax = 10.0;
+  IGS.rmax = 10.0;
 
 L700:
-  r = 1.0 / tesco[nqu * 3 - 2];
-  for (i = 1; i <= n; ++i)
+  r = 1.0 / IGS.tesco[IGS.nqu * 3 - 2];
+  for (i = 1; i <= IGS.n; ++i)
     acor[i] *= r;
 
 L720:
-  hold = h;
-  jstart = 1;
+  IGS.hold = IGS.h;
+  IGS.jstart = 1;
 
   return 0;
 
@@ -3208,7 +3156,7 @@ double vnorm_(long *n, double *v, double *w)
        dl/dx = (x+1)*(x+2)*...*(x+nq-1)/factorial(nq-1), l(-1) = 0.
    for the bdf methods, l(x) is given by
        l(x) = (x+1)*(x+2)* ... *(x+nq)/k,
-   where         k = factorial(nq)*(1 + 1/2 + ... + 1/nq).
+   where k = factorial(nq)*(1 + 1/2 + ... + 1/nq).
 
    the tesco array contains test constants used for the
    local error test and the selection of step size and/or order.
@@ -3252,7 +3200,7 @@ L100:
 
     /* the pc array will contain the coefficients of the polynomial
        p(x) = (x+1)*(x+2)*...*(x+nq-1).
-        initially, p(x) = 1. */
+       initially, p(x) = 1. */
 
     rq1fac = rqfac;
     rqfac /= (double) nq;
@@ -3379,33 +3327,31 @@ int intdy_(double *t, long k, double *yh,
   yh -= yh_offset;
 
   *iflag = 0;
-  if (k < 0 || k > nq) goto L80;
+  if (k < 0 || k > IGS.nq) goto L80;
 
-  tp = tn - hu - uround * 100. * (tn +
-    hu);
-  if ((*t - tp) * (*t - tn) > 0.) goto L90;
+  tp = IGS.tn - IGS.hu - IGS.uround * 100. * (IGS.tn + IGS.hu);
+  if ((*t - tp) * (*t - IGS.tn) > 0.) goto L90;
 
-  s = (*t - tn) / h;
+  s = (*t - IGS.tn) / IGS.h;
   ic = 1;
-  if (k == 0) {
-  goto L15;
-  }
-  jj1 = l - k;
-  i__1 = nq;
-  for (jj = jj1; jj <= i__1; ++jj) {
+  if (k == 0)
+    goto L15;
 
-  ic *= jj;
-  }
+  jj1 = IGS.l - k;
+  i__1 = IGS.nq;
+  for (jj = jj1; jj <= i__1; ++jj)
+    ic *= jj;
+
 L15:
   c = (double) ic;
-  i__1 = n;
+  i__1 = IGS.n;
   for (i = 1; i <= i__1; ++i)
-    dky[i] = c * yh[i + l * yh_dim1];
-  if (k == nq) goto L55;
+    dky[i] = c * yh[i + IGS.l * yh_dim1];
+  if (k == IGS.nq) goto L55;
 
-  jb2 = nq - k;
+  jb2 = IGS.nq - k;
   for (jb = 1; jb <= jb2; ++jb) {
-    j = nq - jb;
+    j = IGS.nq - jb;
     jp1 = j + 1;
     ic = 1;
     if (k != 0) {
@@ -3414,107 +3360,28 @@ L15:
     }
 
     c = (double) ic;
-    for (i = 1; i <= n; ++i)
+    for (i = 1; i <= IGS.n; ++i)
       dky[i] = c * yh[i + jp1 * yh_dim1] + s * dky[i];
   }
   if (k == 0) return 0;
 
 L55:
-  r = pow(h,(double) -k);
-  for (i = 1; i <= n; ++i) dky[i] = r * dky[i];
+  r = pow(IGS.h,(double) -k);
+  for (i = 1; i <= IGS.n; ++i) dky[i] = r * dky[i];
   return 0;
 
 L80:
-  xerrwv ("intdy--  k (=i1) illegal    ", 0, 1, k, 0, 0, 0.0, 0.0);
+  printf ("intdy: k = %ld is illegal.\n", k);
   *iflag = -1;
   return 0;
 
 L90:
-  xerrwv ("intdy--  t (=r1) illegal    ", 0, 0, 0, 0, 1, *t, 0.0);
-  xerrwv ("      t not in interval tcur - hu (= r1) to tcur (=r2)      ",
-          0, 0, 0, 0, 2, tp, tn);
+  printf ("intdy: t = %21.13f is illegal, it is not in the interval", *t);
+  printf ("       tcur - hu (= %21.13f) to tcur (= %21.13f).\n", tp, IGS.tn);
   *iflag = -2;
   return 0;
 
 } /* end of routine intdy_ */
-
-
-/* -----------------------------------------------------------------------------
-   xerrwv
-
-   rewritten by Z.G.Yuan in January 1994 to make it machine-independent.
-   The argument list remains the same as original to avoid too many changes in
-   calling functions even though many of the arguments are not in use.
-
-   all arguments are input arguments.
-
-   msg    = the message (hollerith literal or long array).
-   ( FB 6/4/99 removed
-     nmes   = the length of msg (number of characters).
-     nerr   = the error number (not used).
-   )
-   level  = the error level..
-            0 or 1 means recoverable (control returns to caller).
-            2 means fatal (run is aborted--see note below).
-   ni     = number of integers (0, 1, or 2) to be printed with message.
-
-   i1,i2  = integers to be printed, depending on ni.
-   nr     = number of reals (0, 1, or 2) to be printed with message.
-   r1,r2  = reals to be printed, depending on nr.
-   ( FB 6/4/99 removed
-     lnumber, this variable never be used in this function! ZGYuan 1/19/94
-   )
-
-   note..  this routine is for use in limited context, in the following ways:
-   1. the number of hollerith characters stored per word, denoted
-      by ncpw below, is a data-loaded constant.
-   2. the value of nmes is assumed to be at most 60.
-      (multi-line messages are generated by repeated calls.)
-   3. if level = 2, control passes to the statement   stop
-      to abort the run.  this statement may be machine-dependent.
-   4. r1 and r2 are assumed to be in double precision and are printed
-      in d21.13 format.
-   5. the common block /eh0001/ below is data-loaded (a machine-
-      dependent feature) with default values.
-      this block is needed for proper retention of parameters used by
-      this routine which the user can reset by calling xsetf or xsetun.
-
-      the variables in this block are as follows..
-         mesflg = print control flag..
-                  1 means print all messages (the default).
-                  0 means no printing.
-*/
-
-int xerrwv (char *msg, long level, long ni, long i1, long i2, long nr,
-            double r1, double r2)
-{
-  long mesflg = 1;
-
-  if (mesflg == 0) goto L100;
-
-  /* write the message. */
-
-  printf ("%s\n",msg);
-
-  if (ni == 1) printf(" in above message, i1=%10ld\n", i1);
-
-  if (ni == 2)
-    printf(" in above message, i1=%10ld, i2=%10ld\n", i1, i2);
-
-  if (nr == 1) printf(" in above message, r1=%21.13f\n", r1);
-
-  if (nr == 2)
-    printf(" in above message, r1=%21.13f, r2=%21.13f\n", r1, r2);
-
-  /* abort the run if level = 2 */
-
-L100:
-    if (level != 2) return 0;
- 
-    abort();
-    return 0;
-
-} /* xerrwv */
 
 
 /* -----------------------------------------------------------------------------
@@ -3551,51 +3418,47 @@ int iprep_(long *neq, double *y, double *rwork,
 
     /* Function Body */
     *ipflag = 0;
-/* call prep to do matrix preprocessing operations */
-    prep_(&neq[1], &y[1], &rwork[lyh], &rwork[lsavf], &
-        rwork[lewt], &rwork[lacor], &ia[1], &ja[1], &
-        rwork[lwm],
-       (long *)&rwork[lwm], ipflag);
-    lenwk = mymax(lreq,lwmin);
-    if (*ipflag < 0) {
-    return 0;
-    }
-/* if prep was successful, move yh to end of required space for wm. -----
-*/
-    lyhn = lwm + lenwk;
-    if (lyhn > lyh) {
-    return 0;
-    }
-    lyhd = lyh - lyhn;
-    if (lyhd == 0) {
-    goto L20;
-    }
-    imax = lyhn - 1 + lenyhm;
+    /* call prep to do matrix preprocessing operations */
+    prep_(&neq[1], &y[1], &rwork[IGS.lyh], &rwork[IGS.lsavf], &rwork[IGS.lewt],
+          &rwork[IGS.lacor], &ia[1], &ja[1], &rwork[IGS.lwm],
+          (long *)&rwork[IGS.lwm], ipflag);
+    IGS.lenwk = mymax(IGS.lreq,IGS.lwmin);
+    if (*ipflag < 0)
+      return 0;
+
+    /* if prep was successful, move yh to end of required space for wm */
+    lyhn = IGS.lwm + IGS.lenwk;
+    if (lyhn > IGS.lyh)
+      return 0;
+    
+    lyhd = IGS.lyh - lyhn;
+    if (lyhd == 0) 
+      goto L20;
+    
+    imax = lyhn - 1 + IGS.lenyhm;
     i__1 = imax;
-    for (i = lyhn; i <= i__1; ++i) {
+    for (i = lyhn; i <= i__1; ++i)
+      rwork[i] = rwork[i + lyhd];
 
-    rwork[i] = rwork[i + lyhd];
-    }
-    lyh = lyhn;
-/* reset pointers for savf, ewt, and acor */
+    IGS.lyh = lyhn;
+    /* reset pointers for savf, ewt, and acor */
 L20:
-    lsavf = lyh + lenyh;
-    lewtn = lsavf + n;
-    lacor = lewtn + n;
-    if (istatc == 3) {
-    goto L40;
-    }
-/* if istate = 1, move ewt (left) to its new position */
-    if (lewtn > lewt) {
-    return 0;
-    }
-    i__1 = n;
-    for (i = 1; i <= i__1; ++i) {
+    IGS.lsavf = IGS.lyh + IGS.lenyh;
+    lewtn = IGS.lsavf + IGS.n;
+    IGS.lacor = lewtn + IGS.n;
+    if (IGS.istatc == 3)
+      goto L40;
 
-    rwork[i + lewtn - 1] = rwork[i + lewt - 1];
-    }
+    /* if istate = 1, move ewt (left) to its new position */
+    if (lewtn > IGS.lewt)
+      return 0;
+
+    i__1 = IGS.n;
+    for (i = 1; i <= i__1; ++i)
+      rwork[i + lewtn - 1] = rwork[i + IGS.lewt - 1];
+
 L40:
-    lewt = lewtn;
+    IGS.lewt = lewtn;
     return 0;
 
 } /* iprep_ */
@@ -3675,48 +3538,47 @@ int prep_(long *neq, double *y, double *yh,
     --neq;
 
     /* Function Body */
-    ibian = lrat << 1;
-    ipian = ibian + 1;
-    np1 = n + 1;
-    ipjan = ipian + np1;
-    ibjan = ipjan - 1;
-    liwk = lenwk * lrat;
-    if (ipjan + n - 1 > liwk) goto L210;
+    IGS.ibian = IGS.lrat << 1;
+    IGS.ipian = IGS.ibian + 1;
+    np1 = IGS.n + 1;
+    IGS.ipjan = IGS.ipian + np1;
+    IGS.ibjan = IGS.ipjan - 1;
+    liwk = IGS.lenwk * IGS.lrat;
+    if (IGS.ipjan + IGS.n - 1 > liwk) goto L210;
 
-    if (moss == 0) goto L30;
+    if (IGS.moss == 0) goto L30;
 
-    if (istatc == 3) goto L20;
+    if (IGS.istatc == 3) goto L20;
 
-/* istate = 1 and moss .ne. 0.  perturb y for structure determination. --
-*/
-    i__1 = n;
+    /* istate = 1 and moss .ne. 0.  perturb y for structure determination */
+    i__1 = IGS.n;
     for (i = 1; i <= i__1; ++i) {
     erwt = 1. / ewt[i];
     fac = 1. / ((double) i + 1.) + 1.;
     y[i] += fac * d_sign(&erwt, &y[i]);
 
     }
-    switch (moss) {
+    switch (IGS.moss) {
       case 1:  goto L70;
       case 2:  goto L100;
     }
 
 L20:
     /* istate = 3 and moss .ne. 0.  load y from yh(*,1) */
-    for (i = 1; i <= n; ++i)
+    for (i = 1; i <= IGS.n; ++i)
       y[i] = yh[i];
  
-    switch (moss) {
+    switch (IGS.moss) {
       case 1:  goto L70;
       case 2:  goto L100;
     }
 
     /* moss = 0. Process user-s ia,ja.  add diagonal entries if necessary */
 L30:
-    knew = ipjan;
+    knew = IGS.ipjan;
     kmin = ia[1];
-    iwk[ipian] = 1;
-    i__1 = n;
+    iwk[IGS.ipian] = 1;
+    i__1 = IGS.n;
     for (j = 1; j <= i__1; ++j) {
       jfound = 0;
       kmax = ia[j + 1] - 1;
@@ -3743,7 +3605,7 @@ L45:
       iwk[knew] = j;
       ++knew;
 L50:
-      iwk[ipian + j] = knew + 1 - ipjan;
+      iwk[IGS.ipian + j] = knew + 1 - IGS.ipjan;
       kmin = kmax + 1;
 
     }
@@ -3754,25 +3616,25 @@ L50:
 L70:
 
     /* a dummy call to f allows user to create temporaries for use in jac */
-    CalcDeriv (&y[1], &savf[1], &tn);
+    CalcDeriv (&y[1], &savf[1], &(IGS.tn));
 
-    k = ipjan;
-    iwk[ipian] = 1;
+    k = IGS.ipjan;
+    iwk[IGS.ipian] = 1;
 
-    i__1 = n;
+    i__1 = IGS.n;
     for (j = 1; j <= i__1; ++j) {
       if (k > liwk) goto L210;
 
       iwk[k] = j;
       ++k;
-      for (i = 1; i <= n; ++i)
+      for (i = 1; i <= IGS.n; ++i)
         savf[i] = 0.;
  
-      CalcJacob (&tn, &y[1], j, &savf[1]);
+      CalcJacob (&(IGS.tn), &y[1], j, &savf[1]);
 
-      i__2 = n;
+      i__2 = IGS.n;
       for (i = 1; i <= i__2; ++i) {
-        if (fabs (savf[i]) <= seth)
+        if (fabs (savf[i]) <= IGS.seth)
           goto L80;
 
         if (i == j)
@@ -3786,19 +3648,19 @@ L70:
 L80:
         ;
       } /* end for i */
-      iwk[ipian + j] = k + 1 - ipjan;
+      iwk[IGS.ipian + j] = k + 1 - IGS.ipjan;
 
     } /* end for j */
     goto L140;
 
-/* moss = 2.  compute structure from results of n + 1 calls to f. */
+    /* moss = 2.  compute structure from results of n + 1 calls to f. */
 L100:
-    k = ipjan;
-    iwk[ipian] = 1;
+    k = IGS.ipjan;
+    iwk[IGS.ipian] = 1;
 
-    CalcDeriv (&y[1], &savf[1], &tn);
+    CalcDeriv (&y[1], &savf[1], &(IGS.tn));
 
-    i__1 = n;
+    i__1 = IGS.n;
     for (j = 1; j <= i__1; ++j) {
       if (k > liwk)
         goto L210;
@@ -3810,14 +3672,14 @@ L100:
       dyj = d_sign(&erwt, &yj);
       y[j] = yj + dyj;
 
-      CalcDeriv (&y[1], &ftem[1], &tn);
+      CalcDeriv (&y[1], &ftem[1], &(IGS.tn));
 
       y[j] = yj;
 
-      i__2 = n;
+      i__2 = IGS.n;
       for (i = 1; i <= i__2; ++i) {
         dq = (ftem[i] - savf[i]) / dyj;
-        if (fabs(dq) <= seth)
+        if (fabs(dq) <= IGS.seth)
           goto L110;
 
         if (i == j)
@@ -3832,135 +3694,134 @@ L110:
         ;
       } /* end for i */
 
-      iwk[ipian + j] = k + 1 - ipjan;
+      iwk[IGS.ipian + j] = k + 1 - IGS.ipjan;
     } /* end for j */
 
 L140:
-    if (moss == 0 || istatc != 1)
+    if (IGS.moss == 0 || IGS.istatc != 1)
       goto L150;
 
     /* if istate = 1 and moss .ne. 0, restore y from yh */
-    for (i = 1; i <= n; ++i)
+    for (i = 1; i <= IGS.n; ++i)
       y[i] = yh[i];
 
 L150:
-    nnz = iwk[ipian + n] - 1;
+    IGS.nnz = iwk[IGS.ipian + IGS.n] - 1;
     lenigp = 0;
-    ipigp = ipjan + nnz;
-    if (miter != 2)
+    IGS.ipigp = IGS.ipjan + IGS.nnz;
+    if (IGS.miter != 2)
       goto L160;
 
     /* compute grouping of column indices (miter = 2) */
     maxg = np1;
-    ipjgp = ipjan + nnz;
-    ibjgp = ipjgp - 1;
-    ipigp = ipjgp + n;
-    iptt1 = ipigp + np1;
-    iptt2 = iptt1 + n;
-    lreq = iptt2 + n - 1;
-    if (lreq > liwk)
+    IGS.ipjgp = IGS.ipjan + IGS.nnz;
+    IGS.ibjgp = IGS.ipjgp - 1;
+    IGS.ipigp = IGS.ipjgp + IGS.n;
+    iptt1 = IGS.ipigp + np1;
+    iptt2 = iptt1 + IGS.n;
+    IGS.lreq = iptt2 + IGS.n - 1;
+    if (IGS.lreq > liwk)
       goto L220;
 
-    jgroup_(&n, &iwk[ipian], &iwk[ipjan], &maxg, &ngp, 
-            &iwk[ipigp], &iwk[ipjgp], &iwk[iptt1], &iwk[iptt2], &ier);
+    jgroup_(&(IGS.n), &iwk[IGS.ipian], &iwk[IGS.ipjan], &maxg, &(IGS.ngp), 
+            &iwk[IGS.ipigp], &iwk[IGS.ipjgp], &iwk[iptt1], &iwk[iptt2], &ier);
 
     if (ier != 0)
       goto L220;
 
-    lenigp = ngp + 1;
+    lenigp = IGS.ngp + 1;
 
     /* compute new ordering of rows/columns of jacobian */
 L160:
-    ipr = ipigp + lenigp;
-    ipc = ipr;
-    ipic = ipc + n;
-    ipisp = ipic + n;
-    iprsp = (ipisp - 2) / lrat + 2;
-    iesp = lenwk + 1 - iprsp;
-    if (iesp < 0)
+    IGS.ipr = IGS.ipigp + lenigp;
+    IGS.ipc = IGS.ipr;
+    IGS.ipic = IGS.ipc + IGS.n;
+    IGS.ipisp = IGS.ipic + IGS.n;
+    IGS.iprsp = (IGS.ipisp - 2) / IGS.lrat + 2;
+    IGS.iesp = IGS.lenwk + 1 - IGS.iprsp;
+    if (IGS.iesp < 0)
       goto L230;
 
-    ibr = ipr - 1;
-    for (i = 1; i <= n; ++i)
+    ibr = IGS.ipr - 1;
+    for (i = 1; i <= IGS.n; ++i)
       iwk[ibr + i] = i;
 
-    nsp = liwk + 1 - ipisp;
+    IGS.nsp = liwk + 1 - IGS.ipisp;
 
-    odrv_(&n, &iwk[ipian], &iwk[ipjan], &wk[1], &iwk[ipr], &iwk[ipic], 
-          &nsp, &iwk[ipisp], 1, &iys);
+    odrv_(&(IGS.n), &iwk[IGS.ipian], &iwk[IGS.ipjan], &wk[1], &iwk[IGS.ipr],
+          &iwk[IGS.ipic], &(IGS.nsp), &iwk[IGS.ipisp], 1, &(IGS.iys));
 
-    if (iys == n * 11 + 1)
+    if (IGS.iys == IGS.n * 11 + 1)
       goto L240;
 
-    if (iys != 0) 
+    if (IGS.iys != 0) 
       goto L230;
 
-
-/* reorder jan and do symbolic lu factorization of matrix. --------------
-*/
-    ipa = lenwk + 1 - nnz;
-    nsp = ipa - iprsp;
+    /* reorder jan and do symbolic lu factorization of matrix */
+    IGS.ipa = IGS.lenwk + 1 - IGS.nnz;
+    IGS.nsp = IGS.ipa - IGS.iprsp;
 
     /* Computing MAX */
-    i__1 = n * 12 / lrat, i__2 = n * 6 / lrat + (n << 1) + nnz;
-    lreq = mymax(i__1,i__2) + 3;
-    lreq = lreq + iprsp - 1 + nnz;
-    if (lreq > lenwk)
+    i__1 = IGS.n * 12 / IGS.lrat, i__2 = IGS.n * 6 / IGS.lrat +
+                                         (IGS.n << 1) + IGS.nnz;
+    IGS.lreq = mymax(i__1,i__2) + 3;
+    IGS.lreq = IGS.lreq + IGS.iprsp - 1 + IGS.nnz;
+    if (IGS.lreq > IGS.lenwk)
       goto L250;
 
-    iba = ipa - 1;
-    for (i = 1; i <= nnz; ++i)
-      wk[iba + i] = 0.0;
+    IGS.iba = IGS.ipa - 1;
+    for (i = 1; i <= IGS.nnz; ++i)
+      wk[IGS.iba + i] = 0.0;
 
-    ipisp = lrat * (iprsp - 1) + 1;
-    cdrv_(&n, &iwk[ipr], &iwk[ipc], &iwk[ipic], &iwk[ipian], 
-          &iwk[ipjan], &wk[ipa], &wk[ipa], &wk[ipa], &nsp, 
-          &iwk[ipisp], &wk[iprsp], &iesp, 5, &iys);
-    lreq = lenwk - iesp;
-    if (iys == n * 10 + 1)
+    IGS.ipisp = IGS.lrat * (IGS.iprsp - 1) + 1;
+    cdrv_(&(IGS.n), &iwk[IGS.ipr], &iwk[IGS.ipc], &iwk[IGS.ipic], &iwk[IGS.ipian], 
+          &iwk[IGS.ipjan], &wk[IGS.ipa], &wk[IGS.ipa], &wk[IGS.ipa], &(IGS.nsp), 
+          &iwk[IGS.ipisp], &wk[IGS.iprsp], &(IGS.iesp), 5, &(IGS.iys));
+    IGS.lreq = IGS.lenwk - IGS.iesp;
+    if (IGS.iys == IGS.n * 10 + 1)
       goto L250;
 
-    if (iys != 0)
+    if (IGS.iys != 0)
       goto L260;
 
-    ipil = ipisp;
-    ipiu = ipil + (n << 1) + 1;
-    nzu = iwk[ipil + n] - iwk[ipil];
-    nzl = iwk[ipiu + n] - iwk[ipiu];
-    if (lrat > 1) 
+    ipil = IGS.ipisp;
+    ipiu = ipil + (IGS.n << 1) + 1;
+    IGS.nzu = iwk[ipil + IGS.n] - iwk[ipil];
+    IGS.nzl = iwk[ipiu + IGS.n] - iwk[ipiu];
+    if (IGS.lrat > 1) 
       goto L190;
 
-    adjlr_(&n, &iwk[ipisp], &ldif);
-    lreq += ldif;
+    adjlr_(&(IGS.n), &iwk[IGS.ipisp], &ldif);
+    IGS.lreq += ldif;
 
 L190:
-    if (lrat == 2 && nnz == n)
-      ++lreq;
+    if (IGS.lrat == 2 && IGS.nnz == IGS.n)
+      ++IGS.lreq;
 
-    nsp = nsp + lreq - lenwk;
-    ipa = lreq + 1 - nnz;
-    iba = ipa - 1;
+    IGS.nsp = IGS.nsp + IGS.lreq - IGS.lenwk;
+    IGS.ipa = IGS.lreq + 1 - IGS.nnz;
+    IGS.iba = IGS.ipa - 1;
     *ipper = 0;
     return 0;
 
 L210:
     *ipper = -1;
-    lreq = ((n << 1) + 1) / lrat + 2;
+    IGS.lreq = ((IGS.n << 1) + 1) / IGS.lrat + 2;
 
     /* Computing MAX */
-    i__1 = lenwk + 1;
-    lreq = mymax(i__1,lreq);
+    i__1 = IGS.lenwk + 1;
+    IGS.lreq = mymax(i__1,IGS.lreq);
     return 0;
 
 L220:
     *ipper = -2;
-    lreq = (lreq - 1) / lrat + 1;
+    IGS.lreq = (IGS.lreq - 1) / IGS.lrat + 1;
     return 0;
 
 L230:
     *ipper = -3;
-    cntnzu_(&n, &iwk[ipian], &iwk[ipjan], &nzsut);
-    lreq = lenwk - iesp + (n * 3 + (nzsut << 2) - 1) / lrat + 1;
+    cntnzu_(&(IGS.n), &iwk[IGS.ipian], &iwk[IGS.ipjan], &nzsut);
+    IGS.lreq = IGS.lenwk - IGS.iesp + (IGS.n * 3 + (nzsut << 2) - 1) / IGS.lrat + 1;
     return 0;
 
 L240:
@@ -3973,7 +3834,7 @@ L250:
 
 L260:
     *ipper = -6;
-    lreq = lenwk;
+    IGS.lreq = IGS.lenwk;
     return 0;
 
 } /* prep_ */
@@ -4030,9 +3891,9 @@ L10:
       if (kmin > kmax) goto L30;
 
       i__3 = kmax;
-      for (k = kmin; k <= i__3; ++k) {
+      for (k = kmin; k <= i__3; ++k)
         if (ja[k] == ii) goto L40;
-      }
+
 L30:
       ++num;
 L40:

@@ -309,36 +309,35 @@ BOOL GetNDoses (PINPUTBUF pibIn, PSTR szLex, PIFN pifn)
       ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, vrgszLexTypes[rgiTypes[i]],
                   szLex);
 
-      /* check if it is a scalar or an array and act accordingly */
-      iLB = iUB = -1;
-      if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
-        GetArrayBounds (pibIn, &iLB, &iUB);
+    /* check if it is a scalar or an array and act accordingly */
+    iLB = iUB = -1;
+    if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
+      GetArrayBounds (pibIn, &iLB, &iUB);
 
-      if (iUB == -1) { /* scalar, copy to rgszLex and continue */
-        strcpy (rgszLex[i], szLex);
+    if (iUB == -1) { /* scalar, copy to rgszLex and continue */
+      strcpy (rgszLex[i], szLex);
+    }
+    else { /* array */
+
+      if (2 * (iUB - iLB) != iDoseArg)
+        ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetNDoses", NULL);
+
+      for (j = iLB; j < iUB; j++) {
+        sprintf (szTmp, "%s_%ld", szLex, j); /* create names */          
+
+        if ((bErr = !(hvar = GetVarHandle (szTmp))))
+          ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
+        else
+          strcpy (rgszLex[i+j-iLB], szTmp);
       }
-      else { /* array */
 
-        if (2 * (iUB - iLB) != iDoseArg)
-          ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetNDoses", NULL);
+      /* get the separating comma */
+      if ((bErr = !GetPunct (pibIn, szTmp, ',')))
+        goto Exit_GetNDoses;
 
-        for (j = iLB; j < iUB; j++) {
-          sprintf (szTmp, "%s_%ld", szLex, j); /* create names */          
+      break; /* get out of the for i loop */
 
-          if ((bErr = !(hvar = GetVarHandle (szTmp))))
-            ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
-          else {
-            strcpy (rgszLex[i+j-iLB], szTmp);
-          }
-        } /* for j */
-
-        /* get the separating comma */
-       if ((bErr = !GetPunct (pibIn, szTmp, ',')))
-         goto Exit_GetNDoses;
-
-        break; /* get out of the for i loop */
-
-      } /* end else */
+    } /* end else */
 
   } /* for i */
 
@@ -353,36 +352,35 @@ BOOL GetNDoses (PINPUTBUF pibIn, PSTR szLex, PIFN pifn)
       ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, vrgszLexTypes[rgiTypes[i]],
                   szLex);
 
-      /* check if it is a scalar or an array and act accordingly */
-      iLB = iUB = -1;
-      if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
-        GetArrayBounds (pibIn, &iLB, &iUB);
+    /* check if it is a scalar or an array and act accordingly */
+    iLB = iUB = -1;
+    if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
+      GetArrayBounds (pibIn, &iLB, &iUB);
 
-      if (iUB == -1) { /* scalar, copy to rgszLex and continue */
-        strcpy (rgszLex[i], szLex);
-      }
-      else { /* array */
+    if (iUB == -1) { /* scalar, copy to rgszLex and continue */
+      strcpy (rgszLex[i], szLex);
+    }
+    else { /* array */
 
-        if (2 * (iUB - iLB) != iDoseArg)
-          ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetNDoses", NULL);
+      if (2 * (iUB - iLB) != iDoseArg)
+        ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetNDoses", NULL);
 
-        for (j = iLB; j < iUB; j++) {
-          sprintf (szTmp, "%s_%ld", szLex, j); /* create names */
+      for (j = iLB; j < iUB; j++) {
+        sprintf (szTmp, "%s_%ld", szLex, j); /* create names */
 
-          if ((bErr = !(hvar = GetVarHandle (szTmp))))
-            ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
-          else {
-            strcpy (rgszLex[i+j-iLB], szTmp);
-          }
-        } /* for j */
+        if ((bErr = !(hvar = GetVarHandle (szTmp))))
+          ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
+        else
+          strcpy (rgszLex[i+j-iLB], szTmp);
+      } /* for j */
 
-        /* get the final parenthesis */
-       if ((bErr = EGetPunct (pibIn, szTmp, CH_RPAREN)))
-         goto Exit_GetNDoses;
+      /* get the final parenthesis */
+      if ((bErr = EGetPunct (pibIn, szTmp, CH_RPAREN)))
+        goto Exit_GetNDoses;
 
-        break; /* get out of the for i loop */
+      break; /* get out of the for i loop */
 
-      } /* end else */
+    } /* end else */
 
   } /* for i */
 

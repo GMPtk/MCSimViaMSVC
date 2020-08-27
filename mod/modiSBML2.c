@@ -103,22 +103,23 @@ void AugmentEquation (PVMMAPSTRCT pvm, PSTR szEqn, PSTR szStoi, OPSIGNS sign)
   if (!pvm || !szEqn || !szStoi)
     return;
 
-    if (sign == plus)
-      sprintf (szSymbol, " + ");
+  if (sign == plus)
+    sprintf (szSymbol, " + ");
 
-    if (sign == minus)
-      sprintf (szSymbol, " - ");
+  if (sign == minus)
+    sprintf (szSymbol, " - ");
 
-    if ((szBuf = (PSTR) malloc (strlen(pvm->szEqn) + strlen(szSymbol) + 
-                                strlen(szStoi) + strlen(szEqn) + 5)))
-      if (!strcmp(szStoi, "1"))
-        sprintf (szBuf, "%s%s%s", pvm->szEqn, szSymbol, szEqn);
-      else
-        sprintf (szBuf, "%s%s %s * %s", pvm->szEqn, szSymbol, szStoi, szEqn);
-
+  if ((szBuf = (PSTR) malloc (strlen(pvm->szEqn) + strlen(szSymbol) + 
+                              strlen(szStoi) + strlen(szEqn) + 5))) {
+    if (!strcmp(szStoi, "1"))
+      sprintf (szBuf, "%s%s%s", pvm->szEqn, szSymbol, szEqn);
     else
+      sprintf (szBuf, "%s%s %s * %s", pvm->szEqn, szSymbol, szStoi, szEqn);
+  }
+  else {
       ReportError (NULL, RE_OUTOFMEM | RE_FATAL, szEqn,
                    "* .. defining equation in AugmentEquation");
+  }
 
   if (pvm->szEqn)
     free (pvm->szEqn);

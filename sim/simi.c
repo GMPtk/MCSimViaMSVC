@@ -113,6 +113,7 @@ KM vrgkmKeywordMap[] = { /* Global Keyword - code map */
   {"LogNormal",       KM_LOGNORMAL,       CN_FUNCARG},
   {"LogNormal_v",     KM_LOGNORMALV,      CN_FUNCARG},
   {"LogUniform",      KM_LOGUNIFORM,      CN_FUNCARG},
+  {"NegativeBinomial",KM_NEGATIVEBINOM,   CN_FUNCARG},
   {"Normal",          KM_NORMAL,          CN_FUNCARG},
   {"Normal_cv",       KM_NORMALCV,        CN_FUNCARG},
   {"Normal_v",        KM_NORMALV,         CN_FUNCARG},
@@ -164,13 +165,13 @@ int GetKeywordCode (PSTR szKeyword, PINT pfContext)
 {
   PKM pkm = &vrgkmKeywordMap[0];
 
-  while (*pkm->szKeyword && MyStrcmp (szKeyword, pkm->szKeyword))
+  while (*pkm->szKeyword && MyStrcmp(szKeyword, pkm->szKeyword))
     pkm++;
 
   if (pfContext)
     *pfContext = pkm->fContext; /* Set iContext flag */
 
-  return (pkm->iKWCode);        /* Return Keyword Code or 0 */
+  return(pkm->iKWCode);         /* Return Keyword Code or 0 */
 
 } /* GetKeywordCode */
 
@@ -187,10 +188,10 @@ int GetKeywordCode_in_context (PSTR szKeyword, WORD fContext)
   PKM pkm = &vrgkmKeywordMap[0];
 
   while (*pkm->szKeyword && !((pkm->fContext == fContext) &&
-                              !MyStrcmp (szKeyword, pkm->szKeyword)))
+                              !MyStrcmp(szKeyword, pkm->szKeyword)))
     pkm++;
 
-  return (pkm->iKWCode); /* Return Keyword Code or 0 */
+  return(pkm->iKWCode); /* Return Keyword Code or 0 */
 
 } /* GetKeywordCode_in_context */
 
@@ -208,7 +209,7 @@ PSTR GetKeyword (int iKWCode)
   while (*pkm->szKeyword && iKWCode != pkm->iKWCode)
     pkm++;
 
-  return (pkm->szKeyword);        /* Return Keyword Code or 0 */
+  return(pkm->szKeyword);        /* Return Keyword Code or 0 */
 
 } /* GetKeyword */
 
@@ -222,7 +223,7 @@ PSTR GetKeyword (int iKWCode)
 */
 BOOL YesNoFromLex (PSTR szLex)
 {
-  int ikwcode = GetKeywordCode (szLex, NULL);
+  int ikwcode = GetKeywordCode(szLex, NULL);
   BOOL bReturn;
 
   bReturn = (!isalpha(szLex[0]) ? atoi(szLex)
@@ -243,7 +244,7 @@ BOOL YesNoFromLex (PSTR szLex)
 */
 long ImFromLex (PSTR szLex)
 {
-  int ikwcode = GetKeywordCode (szLex, NULL);
+  int ikwcode = GetKeywordCode(szLex, NULL);
   long lReturn;
 
   lReturn = (!isalpha(szLex[0]) ? atoi(szLex)
@@ -252,23 +253,7 @@ long ImFromLex (PSTR szLex)
             : ikwcode == KM_EULER  ? IAL_EULER
             : 0);
 
-  if (!lReturn) {
-    printf ("Warning: Unknown integrator specification (%s) -\n"
-            "         Switching to Lsodes with default options\n\n", szLex);
-    lReturn = IAL_DEFAULT;
-  }
-
-#ifndef HAVE_LIBSUNDIALS_CVODES
-#ifndef HAVE_LIBSUNDIALS_NVECSERIAL
-  if (ikwcode == KM_CVODES) { /* switch to lsodes if cvodes is not installed */
-    printf ("Warning: Cvodes libraries are not available -\n"
-            "         Switching to Lsodes with default options\n\n");
-    lReturn = IAL_DEFAULT;
-  }
-#endif
-#endif
-
-  return (lReturn);
+  return(lReturn);
 
 } /* ImFromLex */
 
@@ -281,7 +266,7 @@ long ImFromLex (PSTR szLex)
 */
 int McvFromLex (PSTR szLex)
 {
-  int ikwcode = GetKeywordCode (szLex, NULL);
+  int ikwcode = GetKeywordCode(szLex, NULL);
   int iReturn;
 
   iReturn = (ikwcode == KM_UNIFORM          ? MCV_UNIFORM
@@ -312,6 +297,7 @@ int McvFromLex (PSTR szLex)
              : ikwcode == KM_CAUCHY         ? MCV_CAUCHY
              : ikwcode == KM_HALFCAUCHY     ? MCV_HALFCAUCHY
              : ikwcode == KM_USERLL         ? MCV_USERLL
+             : ikwcode == KM_NEGATIVEBINOM  ? MCV_NEGATIVEBINOM
              : (-1));
 
   return iReturn;
@@ -328,12 +314,12 @@ int GetTerminator (PINPUTBUF pibIn, PSTR szLex)
 {
   int iErr;
 
-  if ((iErr = !GetPunct (pibIn, szLex, CH_STMTTERM))) {
+  if ((iErr = !GetPunct(pibIn, szLex, CH_STMTTERM))) {
     szLex[1] = CH_STMTTERM;
-    ReportError (pibIn, RE_EXPECTED, szLex, NULL);
+    ReportError(pibIn, RE_EXPECTED, szLex, NULL);
   }
 
-  return (iErr);
+  return(iErr);
 
 } /* GetTerminator */
 
@@ -353,10 +339,10 @@ BOOL GetSimType (PINPUTBUF pibIn)
 
   int  iAT = AT_DEFAULTSIM;
   int  iKwCode = 0;
-  BOOL bErr=!GetFuncArgs (pibIn, NAT_ARGS, vrgiAtArgTypes, vrgszlexArgs[0]);
+  BOOL bErr=!GetFuncArgs(pibIn, NAT_ARGS, vrgiAtArgTypes, vrgszlexArgs[0]);
 
   if (!bErr) {
-    iKwCode = GetKeywordCode (vrgszlexArgs[0], NULL);
+    iKwCode = GetKeywordCode(vrgszlexArgs[0], NULL);
     switch (iKwCode) {
 
     case KM_MONTECARLO:
@@ -380,20 +366,20 @@ BOOL GetSimType (PINPUTBUF pibIn)
       break;
 
     default:
-      ReportError (pibIn, RE_SPECERR | RE_FATAL, "Unknown SimType ",
-                   vrgszlexArgs[0]);
+      ReportError(pibIn, RE_SPECERR | RE_FATAL, "Unknown SimType ",
+                  vrgszlexArgs[0]);
       break;
     } /* switch */
   } /* if */
   else
-    printf ("Syntax: %s (Normal | MonteCarlo | SetPoints | MCMC)\n"
-         "  -- if not specified, the first spec section will be used.\n\n",
-         GetKeyword(KM_SIMTYPE));
+    printf("Syntax: %s (Normal | MonteCarlo | SetPoints | MCMC)\n"
+           "  -- if not specified, the first spec section will be used.\n\n",
+           GetKeyword(KM_SIMTYPE));
 
   if (!bErr)
     panal->iType = iAT;
 
-  return (bErr);
+  return(bErr);
 
 } /* GetSimType */
 
@@ -415,156 +401,293 @@ BOOL GetPerks (PINPUTBUF pibIn, PSTR szLex, PGIBBSDATA pgd)
   BOOL bOK = TRUE;
   BOOL bErr = FALSE; /* Return value flags error condition */
 
-  if ((bErr = EGetPunct (pibIn, szLex, CH_LPAREN)))
+  if ((bErr = EGetPunct(pibIn, szLex, CH_LPAREN)))
     goto Exit_GetPerks;
 
-  if ((bErr = ENextLex (pibIn, szLex, LX_INTEGER)))
+  if ((bErr = ENextLex(pibIn, szLex, LX_INTEGER)))
     goto Exit_GetPerks;
 
   pgd->nPerks = atoi(szLex);
 
   if ((bErr = (pgd->nPerks <= 0))) {
-    ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, "positive-integer", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, "positive-integer", szLex);
     goto Exit_GetPerks;
   }
 
   pgd->endT = pgd->nPerks - 1;
 
   /* allocate inverse temperature array */
-  if (!(pgd->rgdPerks = InitdVector (pgd->nPerks)))
-    ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPerks", NULL);
+  if (!(pgd->rgdPerks = InitdVector(pgd->nPerks)))
+    ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPerks", NULL);
 
   /* allocate working arrays */
-  if (!(pgd->rgdlnPi  = InitdVector (pgd->nPerks)) ||
-      !(pgd->rglCount = InitlVector (pgd->nPerks)))
-    ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPerks", NULL);
+  if (!(pgd->rgdlnPi  = InitdVector(pgd->nPerks)) ||
+      !(pgd->rglCount = InitlVector(pgd->nPerks)))
+    ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPerks", NULL);
 
   /* try to get temperatures list: */
 
   for (i = 0; i < pgd->nPerks && bOK; i++) {
 
     /* get comma */
-    if (!(bOK = GetOptPunct (pibIn, szLex, ','))) {
+    if (!(bOK = GetOptPunct(pibIn, szLex, ','))) {
       szLex[0] = *pibIn->pbufCur++;
       szLex[1] = '\0';
-      ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+      ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
     } /* if */
 
     /* get floating point number */
-    NextLex (pibIn, szLex, &iType);
+    NextLex(pibIn, szLex, &iType);
     if (!(bOK &= (iType & LX_NUMBER) > 0))
-      ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, "number", szLex);
+      ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, "number", szLex);
     /* assign */
     pgd->rgdPerks[i] = atof(szLex);
     /* initialize */
     pgd->rgdlnPi[i]  = 0; /* perks */
     pgd->rglCount[i] = 0; /* temperature counts */
     if (pgd->rgdPerks[i] < 0)
-      ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL,
-                   "positive inverse temperature", szLex);
+      ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL,
+                  "positive inverse temperature", szLex);
     if ((i > 0) && (pgd->rgdPerks[i] <= pgd->rgdPerks[i-1]))
-      ReportError (pibIn, RE_SPECERR | RE_FATAL,
-                   "Inverse temperatures out of order", NULL);
+      ReportError(pibIn, RE_SPECERR | RE_FATAL,
+                  "Inverse temperatures out of order", NULL);
   } /* for */
 
-  bErr = EGetPunct (pibIn, szLex, CH_RPAREN);
+  bErr = EGetPunct(pibIn, szLex, CH_RPAREN);
 
 Exit_GetPerks:
 
   if (bErr)
-    printf ("Syntax: Inverse temperatures (nPerks, "
-            "<n increasing inverse temperature values >= 0>)\n\n");
+    printf("Syntax: Inverse temperatures (nPerks, "
+           "<n increasing inverse temperature values >= 0>)\n\n");
 
-  return (!bErr);
+  return(!bErr);
 
 } /* GetPerks */
 
 
 /* ----------------------------------------------------------------------------
-   GetIntegrate
+   GetLsodesOptions
 */
-BOOL GetIntegrate (PINPUTBUF pibIn, PINTSPEC pis)
+BOOL GetLsodesOptions (PINPUTBUF pibIn, PSTR szLex, PINTSPEC pis)
 {
-#define NINT_ARGS 4 /* Four integrator Args at max */
+  BOOL bErr = FALSE;
 
-  static int vrgiIntArgTypes[NINT_ARGS]
-    = {LX_IDENTIFIER, LX_NUMBER, LX_NUMBER, LX_INTEGER};
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
 
-  BOOL bErr=!GetFuncArgs (pibIn, NINT_ARGS, vrgiIntArgTypes, vrgszlexArgs[0]);
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
+    goto Exit_GetLsodes;
+  pis->dRtol = atof(szLex);
 
-  if (!bErr) {
-    pis->iAlgo = ImFromLex (vrgszlexArgs[0]);
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
 
-    if (pis->iAlgo  == IAL_LSODES) {
-      pis->dRtol = atof(vrgszlexArgs[1]);
-      pis->dAtol = atof(vrgszlexArgs[2]);
-      pis->iMf   = atoi(vrgszlexArgs[3]);
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
+    goto Exit_GetLsodes;
+  pis->dAtol = atof(szLex);
 
-      /* translate input iMf to original lsodes mf codes */
-      switch (pis->iMf) {
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
 
-        case 0:
-        pis->iMf = 10;
-        break;
+  if ((bErr = ENextLex(pibIn, szLex, LX_INTEGER)))
+    goto Exit_GetLsodes;
+  pis->iMf   = atoi(szLex);
 
-        case 1:
-        pis->iMf = 222;
-        break;
+  /* translate input iMf to original lsodes mf codes */
+  switch (pis->iMf) {
 
-        case 2:
-        pis->iMf = 121;
-        break;
+    case 0:
+    pis->iMf = 10;
+    break;
 
-        default:
-        printf ("Error: method flag must be 0, 1 or 2 for Lsodes - ");
-        printf ("Exiting\n");
-        exit (0);
-        break;
+    case 1:
+    pis->iMf = 222;
+    break;
 
-      } /* switch */
+    case 2:
+    pis->iMf = 121;
+    break;
 
-      pis->iDSFlag = 1;
-    }
-    else {
-      if (pis->iAlgo  == IAL_CVODES) {
-        /* read relative and absolute tolerances */
-        pis->dRtol = atof(vrgszlexArgs[1]);
-        pis->dAtol = atof(vrgszlexArgs[2]);
-        pis->iMf   = atoi(vrgszlexArgs[3]); /* currently ignored */
-        if (pis->iMf == 0)
-          printf("Using CVODES serial\n\n");
-        else {
-          printf ("Warning: last flag for Cvodes is currently ignored.\n\n");
-          pis->iMf = 0;
-        }
-      }
-      else {
-        if (pis->iAlgo  == IAL_EULER) {
-          pis->dTStep = atof(vrgszlexArgs[1]);
-          if (pis->dTStep <= 0)
-            printf ("Warning: Time step specified is null or negative -\n"
-                    "         Resetting to 1\n\n");
-        }
-        else {
-          printf ("Error: Unknown integration method: %s - Exiting\n\n",
-                  vrgszlexArgs[0]);
-          exit (0);
-        }
-      }
-    } /* if */
-  } /* if */
-  else {
-    printf ("Syntax: %s (Lsodes, Relative tolerance, Absolute tolerance, "
-            "Method)\n"
-            "        or %s (CVODES, Relative tolerance, Absolute tolerance, "
-            "0)\n"
-            "        or %s (Euler, Time step, 0, 0)\n\n",
-            GetKeyword (KM_INTEGRATE), GetKeyword (KM_INTEGRATE),
-            GetKeyword (KM_INTEGRATE));
-    exit (0);
+    default:
+    printf("Error: method flag must be 0, 1 or 2 for Lsodes - ");
+    printf("Exiting\n\n");
+    exit(0);
+    break;
+
+  } /* switch */
+
+  pis->iDSFlag = 1;
+
+Exit_GetLsodes:
+
+  if (bErr) {
+    printf("Lsodes options are: relative tolerance, absolute tolerance, "
+           "method.\n\n");
+    exit(0);
   }
 
-  return (bErr);
+  return(bErr);
+
+} /* GetLsodesOptions */
+
+
+/* ----------------------------------------------------------------------------
+   GetCvodesOptions
+*/
+BOOL GetCvodesOptions (PINPUTBUF pibIn, PSTR szLex, PINTSPEC pis)
+{
+  BOOL bErr = FALSE;
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
+    goto Exit_GetCvodes;
+  pis->dRtol = atof(szLex);
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
+    goto Exit_GetCvodes;
+  pis->dAtol = atof(szLex);
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_INTEGER)))
+    goto Exit_GetCvodes;
+  pis->maxsteps = atoi(szLex);
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_INTEGER)))
+    goto Exit_GetCvodes;
+  pis->maxnef = atoi(szLex);
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_INTEGER)))
+    goto Exit_GetCvodes;
+  pis->maxcor = atoi(szLex);
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_INTEGER)))
+    goto Exit_GetCvodes;
+  pis->maxncf = atoi(szLex);
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
+    goto Exit_GetCvodes;
+  pis->nlscoef = atof(szLex);
+
+Exit_GetCvodes:
+
+  if (bErr) {
+    printf("Cvodes options are: relative tolerance, absolute tolerance, "
+           "maxsteps, maxnef, maxcor, maxncf, nlscoef.\n\n");
+    exit(0);
+  }
+
+  return(bErr);
+
+} /* GetCvodesOptions */
+
+
+/* ----------------------------------------------------------------------------
+   GetEulerOptions
+*/
+BOOL GetEulerOptions (PINPUTBUF pibIn, PSTR szLex, PINTSPEC pis)
+{
+  BOOL bErr = FALSE;
+
+  if (!(GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
+    goto Exit_GetEuler;
+  pis->dTStep = atof(szLex);
+
+  if (pis->dTStep <= 0) {
+    printf("Error: Time step specified is null or negative - Exiting\n\n");
+    exit(0);
+  }
+  
+Exit_GetEuler:
+
+  if (bErr) {
+    printf("Euler has one option: time-step.\n\n");
+    exit(0);
+  }
+
+  return(bErr);
+
+} /* GetEulerOptions */
+
+
+/* ----------------------------------------------------------------------------
+   GetIntegrate
+*/
+BOOL GetIntegrate (PINPUTBUF pibIn, PSTR szLex, PINTSPEC pis)
+{
+  BOOL bErr = FALSE;
+
+  if ((bErr = EGetPunct(pibIn, szLex, CH_LPAREN)))
+    goto Exit_GetIntegrate;
+
+  if ((bErr = ENextLex(pibIn, szLex, LX_IDENTIFIER)))
+    goto Exit_GetIntegrate;
+
+  pis->iAlgo = ImFromLex(szLex);
+
+  switch (pis->iAlgo) {
+    case IAL_LSODES:
+    GetLsodesOptions(pibIn, szLex, pis);
+    break;
+
+    case IAL_CVODES:
+#ifndef HAVE_LIBSUNDIALS_CVODES
+#ifndef HAVE_LIBSUNDIALS_NVECSERIAL
+    /* switch to lsodes if cvodes is not installed */
+    printf("Warning: Cvodes libraries are not available -\n"
+           "         Switching to Lsodes with default options\n\n");
+    pis->iAlgo = IAL_DEFAULT;
+    goto Exit_GetIntegrate;
+#endif
+#endif
+    GetCvodesOptions(pibIn, szLex, pis);
+    break;
+
+    case IAL_EULER:
+    GetEulerOptions(pibIn, szLex, pis);
+    break;
+
+    default:
+    printf("Error: Unknown integration method: %s - Exiting\n\n",
+           vrgszlexArgs[0]);
+    bErr = TRUE;
+    goto Exit_GetIntegrate;
+    break;
+  }
+
+  bErr = EGetPunct(pibIn, szLex, CH_RPAREN);
+
+Exit_GetIntegrate:
+
+  if (bErr) {
+    printf("Syntax: %s([Lsodes | Cvodes | Euler], [OPTIONS]);\n\n",
+           GetKeyword(KM_INTEGRATE));
+    exit(0);
+  }
+
+  return(!bErr);
 
 } /* GetIntegrate */
 
@@ -599,10 +722,10 @@ void DListToArray (PLIST plist, PLONG pcDouble, PDOUBLE *ppDouble)
 
   *pcDouble = ListLength(plist);
 
-  if (!(pdTmp = *ppDouble = InitdVector (*pcDouble)))
-    ReportError (NULL, RE_OUTOFMEM | RE_FATAL, "DListToArray", NULL);
+  if (!(pdTmp = *ppDouble = InitdVector(*pcDouble)))
+    ReportError(NULL, RE_OUTOFMEM | RE_FATAL, "DListToArray", NULL);
 
-  ForAllList (plist, &OneDToArray, (PVOID) &pdTmp);
+  ForAllList(plist, &OneDToArray, (PVOID) &pdTmp);
 
 } /* DListToArray */
 
@@ -621,34 +744,34 @@ BOOL GetListOfTimes (PINPUTBUF pibIn, int nRecs, PPRINTREC *ppr, PSTR szLex)
   BOOL bErr;
 
   do {
-    if ( !(pdTmp = InitdVector (1)))
-      ReportError (NULL, RE_OUTOFMEM | RE_FATAL, "GetListOfTimes", NULL);
+    if ( !(pdTmp = InitdVector(1)))
+      ReportError(NULL, RE_OUTOFMEM | RE_FATAL, "GetListOfTimes", NULL);
 
     *pdTmp = atof(szLex);
-    QueueListItem (plistTimes, (PVOID) pdTmp);
-  } while ((iNLI = NextListItem (pibIn, szLex, LX_NUMBER, 1, CH_RPAREN)) > 0);
+    QueueListItem(plistTimes, (PVOID) pdTmp);
+  } while ((iNLI = NextListItem(pibIn, szLex, LX_NUMBER, 1, CH_RPAREN)) > 0);
 
   if (!iNLI) /* List terminator */
-    bErr = EGetPunct (pibIn, szLex, CH_RPAREN) || !ListLength(plistTimes);
+    bErr = EGetPunct(pibIn, szLex, CH_RPAREN) || !ListLength(plistTimes);
   else {
     bErr = TRUE;
-    ReportError (pibIn, RE_LEXEXPECTED, "number", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "number", szLex);
   }
 
   if (!bErr)
     for (i = 0; i < nRecs; ++i)
-      DListToArray (plistTimes, &ppr[i]->cTimes, &ppr[i]->pdTimes);
+      DListToArray(plistTimes, &ppr[i]->cTimes, &ppr[i]->pdTimes);
 
-  FreeList (&plistTimes, NULL, TRUE); /* Free list and cells */
+  FreeList(&plistTimes, NULL, TRUE); /* Free list and cells */
 
   for (i = 1; i < ppr[0]->cTimes && !bErr; i++) /* Verify Times */
     if ((bErr = (*(ppr[0]->pdTimes+i) <= *(ppr[0]->pdTimes+i-1)))) {
       for (j = 0; j < nRecs; ++j)
-        free (ppr[j]->pdTimes);
-      ReportError (pibIn, RE_SPECERR | RE_FATAL, "Times out of order", NULL);
+        free(ppr[j]->pdTimes);
+      ReportError(pibIn, RE_SPECERR | RE_FATAL, "Times out of order", NULL);
     } /* if */
 
-  return (bErr);
+  return(bErr);
 
 } /* GetListOfTimes */
 
@@ -666,28 +789,28 @@ BOOL GetListOfData (PINPUTBUF pibIn, PDATAREC pda, PSTR szLex)
   int iNLI;
   BOOL bErr;
 
-  while ((iNLI = NextListItem (pibIn, szLex, LX_NUMBER, 1, CH_RPAREN))
+  while ((iNLI = NextListItem(pibIn, szLex, LX_NUMBER, 1, CH_RPAREN))
          > 0) {
-    if ( !(pdTmp = InitdVector (1)))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetListOfData", NULL);
+    if ( !(pdTmp = InitdVector(1)))
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetListOfData", NULL);
 
     *pdTmp = atof(szLex);
-    QueueListItem (plistData, (PVOID) pdTmp);
+    QueueListItem(plistData, (PVOID) pdTmp);
 
   } /* while */
 
   if (!iNLI) /* List terminator */
-    bErr = EGetPunct (pibIn, szLex, CH_RPAREN)
+    bErr = EGetPunct(pibIn, szLex, CH_RPAREN)
            || !ListLength(plistData);
   else {
     bErr = TRUE;
-    ReportError (pibIn, RE_LEXEXPECTED, "number", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "number", szLex);
   } /* else */
 
-  if (!bErr) DListToArray (plistData, &pda->cData, &pda->pdData);
+  if (!bErr) DListToArray(plistData, &pda->cData, &pda->pdData);
 
-  FreeList (&plistData, NULL, TRUE); /* Free list and cells */
-  return (bErr);
+  FreeList(&plistData, NULL, TRUE); /* Free list and cells */
+  return(bErr);
 
 } /* GetListOfData */
 
@@ -710,93 +833,93 @@ BOOL GetPrint (PINPUTBUF pibIn, PSTR szLex, POUTSPEC pos)
   PSTRLEX   szTmp;
 
   /* get the opening parenthesis and list of variables to print */
-  if (!(bErr = EGetPunct (pibIn, szLex, CH_LPAREN))) {
+  if (!(bErr = EGetPunct(pibIn, szLex, CH_LPAREN))) {
     for (;;) {
-      NextLex (pibIn, szLex, &iLex);
+      NextLex(pibIn, szLex, &iLex);
 
       if (iLex != LX_IDENTIFIER)
         break; /* hitting the list of times, stop reading variable names */
 
       /* check if it is a scalar or an array and act accordingly */
       iLB = iUB = -1;
-      if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
-        GetArrayBounds (pibIn, &iLB, &iUB);
+      if (GetPunct(pibIn, szTmp, '[')) /* array found, read bounds */
+        GetArrayBounds(pibIn, &iLB, &iUB);
 
       if (iUB == -1) { /* scalar */
 
         if (nVars == MAX_PRINT_VARS)
-          ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
+          ReportError(pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
 
-        if ((bErr = !(hvar = GetVarHandle (szLex))))
-          ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szLex, NULL);
+        if ((bErr = !(hvar = GetVarHandle(szLex))))
+          ReportError(pibIn, RE_UNDEFINED | RE_FATAL, szLex, NULL);
         else {
-          if ( !(pprintrec[nVars] = (PPRINTREC) malloc (sizeof(PRINTREC))) ||
+          if ( !(pprintrec[nVars] = (PPRINTREC) malloc(sizeof(PRINTREC))) ||
                !(pprintrec[nVars]->szOutputName =
-                (PSTR) malloc (MyStrlen(szLex)+1)))
-            ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
-          MyStrcpy (pprintrec[nVars]->szOutputName, szLex);
+                (PSTR) malloc(MyStrlen(szLex)+1)))
+            ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
+          MyStrcpy(pprintrec[nVars]->szOutputName, szLex);
           pprintrec[nVars]->hvar = hvar;
-          assert (pprintrec[nVars]);
+          assert(pprintrec[nVars]);
           ++nVars;
         }
-        GetOptPunct (pibIn, szLex, ',');
+        GetOptPunct(pibIn, szLex, ',');
       }
       else { /* array */
 
         for (i = iLB; i < iUB; i++) {
-          sprintf (szTmp, "%s_%ld", szLex, i); /* create names */
+          sprintf(szTmp, "%s_%ld", szLex, i); /* create names */
 
           if (nVars == MAX_PRINT_VARS)
-            ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
+            ReportError(pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
 
-          if ((bErr = !(hvar = GetVarHandle (szTmp))))
-            ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
+          if ((bErr = !(hvar = GetVarHandle(szTmp))))
+            ReportError(pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
           else {
-            if ( !(pprintrec[nVars] = (PPRINTREC) malloc (sizeof(PRINTREC))) ||
+            if ( !(pprintrec[nVars] = (PPRINTREC) malloc(sizeof(PRINTREC))) ||
                  !(pprintrec[nVars]->szOutputName =
-                  (PSTR) malloc (strlen(szTmp)+1))) {
-              ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
+                  (PSTR) malloc(strlen(szTmp)+1))) {
+              ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
             }
-            strcpy (pprintrec[nVars]->szOutputName, szTmp);
+            strcpy(pprintrec[nVars]->szOutputName, szTmp);
             pprintrec[nVars]->hvar = hvar;
-            assert (pprintrec[nVars]);
+            assert(pprintrec[nVars]);
             ++nVars;
           }
 
           if (i == (iUB - 1))
-            GetOptPunct (pibIn, szTmp, ',');
+            GetOptPunct(pibIn, szTmp, ',');
         } /* end for i */
       } /* end else */
     } /* end for ever */
 
     /* check the number of variables read in */
     if (nVars < 1)
-      ReportError (pibIn, RE_LEXEXPECTED, "identifier", szLex);
+      ReportError(pibIn, RE_LEXEXPECTED, "identifier", szLex);
 
     /* get list of output times */
-    bErr = GetListOfTimes (pibIn, nVars, pprintrec, szLex);
+    bErr = GetListOfTimes(pibIn, nVars, pprintrec, szLex);
 
     if (bErr) {
       for (n = 0; n < nVars; ++n) {
-        free (pprintrec[n]->szOutputName);
-        free (pprintrec[n]);
+        free(pprintrec[n]->szOutputName);
+        free(pprintrec[n]);
       }
     }
     else
       for (n = 0; n < nVars; ++n)
-        QueueListItem (pos->plistPrintRecs, (PVOID) pprintrec[n]);
+        QueueListItem(pos->plistPrintRecs, (PVOID) pprintrec[n]);
   } /* if */
 
-  if (!bErr) bErr = GetTerminator (pibIn, szLex);
+  if (!bErr) bErr = GetTerminator(pibIn, szLex);
   else {
     if (!bGavePrintUsage) {
-      printf ("Syntax: %s (<Identifiers>, Time1, Time2, ...)\n\n",
-              GetKeyword(KM_PRINT));
+      printf("Syntax: %s (<Identifiers>, Time1, Time2, ...)\n\n",
+             GetKeyword(KM_PRINT));
       bGavePrintUsage = TRUE;
     }
   }
 
-  return (bErr);
+  return(bErr);
 
 } /* GetPrint */
 
@@ -822,103 +945,103 @@ BOOL GetPrintStep (PINPUTBUF pibIn, PSTR szLex, POUTSPEC pos)
   PSTRLEX   szTmp;
 
   /* get the opening parenthesis and list of variables to print */
-  bErr = EGetPunct (pibIn, szLex, CH_LPAREN);
+  bErr = EGetPunct(pibIn, szLex, CH_LPAREN);
   if (bErr)
     goto Exit_GetPrintStep;
 
   for (;;) {
-    NextLex (pibIn, szLex, &iLex);
+    NextLex(pibIn, szLex, &iLex);
 
     if (iLex != LX_IDENTIFIER)
       break; /* hitting the list of times, stop reading variable names */
 
     /* check if it is a scalar or an array and act accordingly */
     iLB = iUB = -1;
-    if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
-      GetArrayBounds (pibIn, &iLB, &iUB);
+    if (GetPunct(pibIn, szTmp, '[')) /* array found, read bounds */
+      GetArrayBounds(pibIn, &iLB, &iUB);
 
     if (iUB == -1) { /* scalar */
 
       if (nVars == MAX_PRINT_VARS)
-        ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
+        ReportError(pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
 
-      if ((bErr = !(hvar = GetVarHandle (szLex))))
-        ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szLex, NULL);
+      if ((bErr = !(hvar = GetVarHandle(szLex))))
+        ReportError(pibIn, RE_UNDEFINED | RE_FATAL, szLex, NULL);
       else {
-        if ( !(pprintrec[nVars] = (PPRINTREC) malloc (sizeof(PRINTREC))) ||
+        if ( !(pprintrec[nVars] = (PPRINTREC) malloc(sizeof(PRINTREC))) ||
              !(pprintrec[nVars]->szOutputName =
-              (PSTR) malloc (MyStrlen(szLex)+1)))
-          ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
-        MyStrcpy (pprintrec[nVars]->szOutputName, szLex);
+              (PSTR) malloc(MyStrlen(szLex)+1)))
+          ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
+        MyStrcpy(pprintrec[nVars]->szOutputName, szLex);
         pprintrec[nVars]->hvar = hvar;
-        assert (pprintrec[nVars]);
+        assert(pprintrec[nVars]);
         ++nVars;
       }
-      GetOptPunct (pibIn, szLex, ',');
+      GetOptPunct(pibIn, szLex, ',');
     }
     else { /* array */
 
       for (i = iLB; i < iUB; i++) {
-        sprintf (szTmp, "%s_%ld", szLex, i); /* create names */
+        sprintf(szTmp, "%s_%ld", szLex, i); /* create names */
 
         if (nVars == MAX_PRINT_VARS)
-          ReportError (pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
+          ReportError(pibIn, RE_TOOMANYPVARS | RE_FATAL, "GetPrint", NULL);
 
-        if ((bErr = !(hvar = GetVarHandle (szTmp))))
-          ReportError (pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
+        if ((bErr = !(hvar = GetVarHandle(szTmp))))
+          ReportError(pibIn, RE_UNDEFINED | RE_FATAL, szTmp, NULL);
         else {
-          if ( !(pprintrec[nVars] = (PPRINTREC) malloc (sizeof(PRINTREC))) ||
+          if ( !(pprintrec[nVars] = (PPRINTREC) malloc(sizeof(PRINTREC))) ||
                !(pprintrec[nVars]->szOutputName =
-               (PSTR) malloc (strlen(szTmp)+1))) {
-            ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
+               (PSTR) malloc(strlen(szTmp)+1))) {
+            ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrint", NULL);
           }
-          strcpy (pprintrec[nVars]->szOutputName, szTmp);
+          strcpy(pprintrec[nVars]->szOutputName, szTmp);
           pprintrec[nVars]->hvar = hvar;
-          assert (pprintrec[nVars]);
+          assert(pprintrec[nVars]);
           ++nVars;
         }
 
         if (i == (iUB - 1))
-          GetOptPunct (pibIn, szTmp, ',');
+          GetOptPunct(pibIn, szTmp, ',');
       } /* end for i*/
     } /* end else */
   } /* end for ever */
 
   /* check the number of variables read in */
   if (nVars < 1) {
-    ReportError (pibIn, RE_LEXEXPECTED, "identifier", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "identifier", szLex);
     bErr = TRUE;
     goto Exit_GetPrintStep;
   }
 
   /* the starting output time has already been read */
   dStart = atof(szLex);
-  if (!(bOK = GetPunct (pibIn, szLex, ',')))
-    ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+  if (!(bOK = GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
 
   /* get ending output time */
-  if ((bErr = ENextLex (pibIn, szLex, LX_NUMBER)))
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
     goto Exit_GetPrintStep;
   dEnd   = atof(szLex);
-  if (!(bOK = GetPunct (pibIn, szLex, ',')))
-    ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
+  if (!(bOK = GetPunct(pibIn, szLex, ',')))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ",", szLex);
 
   /* get output time step */
-  if ((bErr = ENextLex (pibIn, szLex, LX_NUMBER)))
+  if ((bErr = ENextLex(pibIn, szLex, LX_NUMBER)))
     goto Exit_GetPrintStep;
-  dStep  = atof (szLex);
+  dStep  = atof(szLex);
 
   /* get closing parenthesis */
-  if (!(bOK = GetPunct (pibIn, szLex, CH_RPAREN)))
-    ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, ")", szLex);
+  if (!(bOK = GetPunct(pibIn, szLex, CH_RPAREN)))
+    ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, ")", szLex);
 
   /* check times for consistency  */
   if ((bErr = (dEnd <= dStart))) {
-    ReportError (pibIn, RE_SPECERR, "End_time must be > Start_time", NULL);
+    ReportError(pibIn, RE_SPECERR, "End_time must be > Start_time", NULL);
     goto Exit_GetPrintStep;
   }
   else if ((bErr = (dStep > (dEnd - dStart)))) {
-    ReportError (pibIn, RE_SPECERR, "Time_step too large", NULL);
+    ReportError(pibIn, RE_SPECERR, "Time_step too large", NULL);
     goto Exit_GetPrintStep;
   }
 
@@ -932,27 +1055,27 @@ BOOL GetPrintStep (PINPUTBUF pibIn, PSTR szLex, POUTSPEC pos)
   }
 
   for (n = 0; n < nVars; ++n) {
-    if ( !(pprintrec[n]->pdTimes = InitdVector (pprintrec[n]->cTimes)))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrintStep", NULL);
+    if ( !(pprintrec[n]->pdTimes = InitdVector(pprintrec[n]->cTimes)))
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetPrintStep", NULL);
 
     for (i = 0; i < pprintrec[n]->cTimes - 1; i++)
       pprintrec[n]->pdTimes[i] = dStart + (i * dStep);
 
     pprintrec[n]->pdTimes[pprintrec[n]->cTimes - 1] = dEnd;
 
-    QueueListItem (pos->plistPrintRecs, (PVOID) pprintrec[n]);
+    QueueListItem(pos->plistPrintRecs, (PVOID) pprintrec[n]);
   }
 
 Exit_GetPrintStep:
 
   if (bErr)
     if (!bGavePrintStepUsage) {
-      printf ("Syntax: %s (<Identifiers>, Start_time, End_time, Time_step)\n\n",
-              GetKeyword(KM_PRINTSTEP));
+      printf("Syntax: %s (<Identifiers>, Start_time, End_time, Time_step)\n\n",
+             GetKeyword(KM_PRINTSTEP));
       bGavePrintStepUsage = TRUE;
     }
 
-  return (bErr);
+  return(bErr);
 
 } /* GetPrintStep */
 
@@ -970,37 +1093,37 @@ BOOL GetData (PINPUTBUF pibIn, PSTR szLex, POUTSPEC pos)
   BOOL bErr = FALSE;
   HVAR hvar;
 
-  if (!(bErr = EGetPunct (pibIn, szLex, CH_LPAREN))) {
-    if (!(bErr = ENextLex (pibIn, szLex, LX_IDENTIFIER))) {
+  if (!(bErr = EGetPunct(pibIn, szLex, CH_LPAREN))) {
+    if (!(bErr = ENextLex(pibIn, szLex, LX_IDENTIFIER))) {
 
-      if ((bErr = !(hvar = GetVarHandle (szLex))))
-        ReportError (pibIn, RE_UNDEFINED, szLex, NULL);
+      if ((bErr = !(hvar = GetVarHandle(szLex))))
+        ReportError(pibIn, RE_UNDEFINED, szLex, NULL);
 
       else {
-        if ( !(pdatarec = (PDATAREC) malloc (sizeof(DATAREC))))
-          ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetData", NULL);
+        if ( !(pdatarec = (PDATAREC) malloc(sizeof(DATAREC))))
+          ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetData", NULL);
 
-        if ( !(pdatarec->szDataName = (PSTR) malloc (MyStrlen(szLex)+1)))
-          ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetData", NULL);
+        if ( !(pdatarec->szDataName = (PSTR) malloc(MyStrlen(szLex)+1)))
+          ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetData", NULL);
 
-        MyStrcpy (pdatarec->szDataName, szLex);
+        MyStrcpy(pdatarec->szDataName, szLex);
         assert(pdatarec);
 
         pdatarec->hvar = hvar;
 
-        bErr = GetListOfData (pibIn, pdatarec, szLex);
+        bErr = GetListOfData(pibIn, pdatarec, szLex);
 
         if (bErr) {
-          free (pdatarec->szDataName);
-          free (pdatarec);
+          free(pdatarec->szDataName);
+          free(pdatarec);
         } /* if */
         else
-          QueueListItem (pos->plistDataRecs, (PVOID) pdatarec);
+          QueueListItem(pos->plistDataRecs, (PVOID) pdatarec);
       } /* else */
     } /* if */
   } /* if */
 
-  if (!bErr) bErr = GetTerminator (pibIn, szLex);
+  if (!bErr) bErr = GetTerminator(pibIn, szLex);
   else {
     if (!bGaveDataUsage) {
       printf ("Syntax: %s (identifier, Time1, Time2, ...)\n\n",
@@ -1009,7 +1132,7 @@ BOOL GetData (PINPUTBUF pibIn, PSTR szLex, POUTSPEC pos)
     } /* if */
   } /* else */
 
-  return (bErr);
+  return(bErr);
 
 } /* GetData */
 
@@ -1029,26 +1152,26 @@ BOOL GetStringArg (PINPUTBUF pibIn, PSTR *pszArg, PSTR szLex, BOOL bDelim)
 {
   BOOL bErr;
 
-  assert (szLex); /* Workspace must be given */
+  assert(szLex); /* Workspace must be given */
 
   if (bDelim)
-    GetOptPunct (pibIn, szLex, ',');
+    GetOptPunct(pibIn, szLex, ',');
 
-  bErr = ENextLex (pibIn, szLex, LX_STRING);
+  bErr = ENextLex(pibIn, szLex, LX_STRING);
 
   if (!bErr) {
     if (szLex[0]) {
       /* Allocate and copy the string */
-      if ( !(*pszArg = (PSTR) malloc (MyStrlen(szLex) + 1)))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetStringArg", NULL);
+      if ( !(*pszArg = (PSTR) malloc(MyStrlen(szLex) + 1)))
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetStringArg", NULL);
 
-      MyStrcpy (*pszArg, szLex);
+      MyStrcpy(*pszArg, szLex);
     }
     else
       *pszArg = NULL; /* No string given */
   } /* if */
 
-  return (bErr);
+  return(bErr);
 
 } /* GetStringArg */
 
@@ -1062,20 +1185,20 @@ BOOL GetOutputFile (PINPUTBUF pibIn, PSTR szLex, PANALYSIS panal)
 {
   BOOL bErr = FALSE;
 
-  bErr = EGetPunct (pibIn, szLex, CH_LPAREN)
-         || GetStringArg (pibIn, &panal->szOutfilename, szLex, FALSE);
+  bErr = EGetPunct(pibIn, szLex, CH_LPAREN)
+         || GetStringArg(pibIn, &panal->szOutfilename, szLex, FALSE);
 
   if (!bErr) {
     panal->bAllocatedFileName = TRUE;
-    bErr = EGetPunct (pibIn, szLex, CH_RPAREN);
+    bErr = EGetPunct(pibIn, szLex, CH_RPAREN);
   }
 
   if (!bErr)
-    bErr = GetTerminator (pibIn, szLex);
+    bErr = GetTerminator(pibIn, szLex);
   else
-    printf ("Syntax: %s (szOutputFilename)\n\n", GetKeyword (KM_OUTPUTFILE));
+    printf("Syntax: %s (szOutputFilename)\n\n", GetKeyword(KM_OUTPUTFILE));
 
-  return (bErr);
+  return(bErr);
 
 } /* GetOutputFile */
 
@@ -1090,11 +1213,11 @@ BOOL GetSimulate ()
 
   if (!bGaveSimulateUsage) {
     printf ("Warning: %s statements are obsolete and ignored.\n\n",
-            GetKeyword (KM_SIMULATE));
+            GetKeyword(KM_SIMULATE));
     bGaveSimulateUsage = TRUE;
   }
 
-  return (1);
+  return(1);
 
 } /* GetSimulate */
 
@@ -1116,20 +1239,20 @@ BOOL GetStartTime (PINPUTBUF pibIn, PEXPERIMENT pexp)
 {
   static int vrgiSimArgTypes[1] = {LX_NUMBER | LX_IDENTIFIER};
 
-  BOOL bErr=!GetFuncArgs (pibIn, 1, vrgiSimArgTypes, vrgszlexArgs[0]);
+  BOOL bErr=!GetFuncArgs(pibIn, 1, vrgiSimArgTypes, vrgszlexArgs[0]);
 
   if (!bErr) {
-    if (!DefDepParm (vrgszlexArgs[0], &pexp->dT0, &pexp->hT0))
-      ReportError (pibIn, RE_EXPECTED, "StartTime spec", NULL);
+    if (!DefDepParm(vrgszlexArgs[0], &pexp->dT0, &pexp->hT0))
+      ReportError(pibIn, RE_EXPECTED, "StartTime spec", NULL);
   }
   else {
     if (!bGaveSrtTUsage) {
-      printf ("Syntax: %s (InitialTime)\n\n", GetKeyword (KM_STARTTIME));
+      printf("Syntax: %s (InitialTime)\n\n", GetKeyword(KM_STARTTIME));
       bGaveSrtTUsage = TRUE;
     }
   }
 
-  return (bErr);
+  return(bErr);
 
 } /* GetStartTime */
 
@@ -1157,30 +1280,30 @@ static int vrgiGibbsArgTypes[NMCMC_ARGS] = {LX_STRING,  LX_STRING,  LX_STRING,
   if (!bErr) {
     if (*vrgszlexArgs[0]) { /* Get output Filename */
       if ( !(panal->gd.szGout = (PSTR) malloc(MyStrlen(vrgszlexArgs[0]) + 1)))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetMCMCSpec", NULL);
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetMCMCSpec", NULL);
 
-      MyStrcpy (panal->gd.szGout, vrgszlexArgs[0]);
+      MyStrcpy(panal->gd.szGout, vrgszlexArgs[0]);
       panal->bAllocatedFileName = TRUE;
     }
     else panal->gd.szGout = vszGibbsOutDefault;
 
     if (*vrgszlexArgs[1]) { /* Get restart file */
       if ( !(panal->gd.szGrestart =
-            (PSTR) malloc (MyStrlen(vrgszlexArgs[1]) + 1)))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetMCMCSpec", NULL);
+            (PSTR) malloc(MyStrlen(vrgszlexArgs[1]) + 1)))
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetMCMCSpec", NULL);
 
-      MyStrcpy (panal->gd.szGrestart, vrgszlexArgs[1]);
+      MyStrcpy(panal->gd.szGrestart, vrgszlexArgs[1]);
     }
 
     if (panal->gd.szGrestart != NULL &&
         !strcmp(panal->gd.szGout, panal->gd.szGrestart))
-      ReportError (pibIn, RE_OUTISRESTART | RE_FATAL, "GetMCMCSpec", NULL);
+      ReportError(pibIn, RE_OUTISRESTART | RE_FATAL, "GetMCMCSpec", NULL);
 
     if (*vrgszlexArgs[2]) { /* get external data file name */
       if ( !(panal->gd.szGdata = (PSTR) malloc(MyStrlen(vrgszlexArgs[2]) + 1)))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetMCMCSpec", NULL);
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetMCMCSpec", NULL);
 
-      MyStrcpy (panal->gd.szGdata, vrgszlexArgs[2]);
+      MyStrcpy(panal->gd.szGdata, vrgszlexArgs[2]);
     }
 
     panal->gd.nMaxIter     = atol(vrgszlexArgs[3]);
@@ -1194,21 +1317,21 @@ static int vrgiGibbsArgTypes[NMCMC_ARGS] = {LX_STRING,  LX_STRING,  LX_STRING,
         ((panal->gd.nSimTypeFlag==2) && (panal->gd.szGrestart == NULL))) {
       printf ("Error: if simTypeFlag is one or two a restart file must be "
               "given - Exiting\n\n");
-      exit (0);
+      exit(0);
     }
   } /* if */
   else {
     printf ("Syntax:\n%s (szOut, szRestart, szData, "
             "nMaxIters, simTypeFlag, nPrintFreq,\n"
             "      nIterToPrint, dSeed)\nExiting.\n\n",
-            GetKeyword (KM_MCMC));
+            GetKeyword(KM_MCMC));
     exit(0);
   }
 
   if (!bErr)
    panal->iType = AT_MCMC;
 
-  return (!bErr);
+  return(!bErr);
 
 } /* GetMCMCSpec */
 
@@ -1231,9 +1354,9 @@ BOOL GetOptDSpec (PINPUTBUF pibIn, PANALYSIS  panal, PSTR szLex)
   int ikwcode;
 
   /* Try to get open paren and filenames */
-  if ((iErr = EGetPunct (pibIn, szLex, CH_LPAREN)                   ||
-              GetStringArg (pibIn, &panal->gd.szGout, szLex, FALSE) ||
-              GetStringArg (pibIn, &panal->gd.szGrestart, szLex, TRUE))) {
+  if ((iErr = EGetPunct(pibIn, szLex, CH_LPAREN)                   ||
+              GetStringArg(pibIn, &panal->gd.szGout, szLex, FALSE) ||
+              GetStringArg(pibIn, &panal->gd.szGrestart, szLex, TRUE))) {
     goto Exit_GetOptDSpec;
   }
   else {
@@ -1242,25 +1365,25 @@ BOOL GetOptDSpec (PINPUTBUF pibIn, PANALYSIS  panal, PSTR szLex)
 
   /* There has to be a restart file */
   if (!panal->gd.szGrestart)
-    ReportError (pibIn, RE_SPECERR | RE_FATAL, "Missing restart file", NULL);
+    ReportError(pibIn, RE_SPECERR | RE_FATAL, "Missing restart file", NULL);
 
   /* Try to get number of parameter samples to read in */
-  GetOptPunct (pibIn, szLex, ',');
-  if ((iErr = ENextLex (pibIn, szLex, LX_INTEGER)))
+  GetOptPunct(pibIn, szLex, ',');
+  if ((iErr = ENextLex(pibIn, szLex, LX_INTEGER)))
     goto Exit_GetOptDSpec;
-  panal->mc.nRuns = atol (szLex);
+  panal->mc.nRuns = atol(szLex);
 
   /* Try to get the random seed */
-  GetOptPunct (pibIn, szLex, ',');
-  if ((iErr = ENextLex (pibIn, szLex, LX_NUMBER)))
+  GetOptPunct(pibIn, szLex, ',');
+  if ((iErr = ENextLex(pibIn, szLex, LX_NUMBER)))
     goto Exit_GetOptDSpec;
-  panal->dSeed = atof (szLex);
+  panal->dSeed = atof(szLex);
 
   /* Try to get the style (Forward or Backward) */
-  GetOptPunct (pibIn, szLex, ',');
-  if ((iErr = ENextLex (pibIn, szLex, LX_IDENTIFIER)))
+  GetOptPunct(pibIn, szLex, ',');
+  if ((iErr = ENextLex(pibIn, szLex, LX_IDENTIFIER)))
     goto Exit_GetOptDSpec;
-  ikwcode = GetKeywordCode (szLex, NULL);
+  ikwcode = GetKeywordCode(szLex, NULL);
   if (ikwcode == KM_FORWARD)
     panal->mc.style = forward;
   else if (ikwcode == KM_BACKWARD)
@@ -1271,36 +1394,36 @@ BOOL GetOptDSpec (PINPUTBUF pibIn, PANALYSIS  panal, PSTR szLex)
        }
 
   /* Try to get identifier list */
-  while ((iNLI=NextListItem (pibIn, szLex, LX_IDENTIFIER, 1, CH_RPAREN)) > 0) {
+  while ((iNLI=NextListItem(pibIn, szLex, LX_IDENTIFIER, 1, CH_RPAREN)) > 0) {
     hvar = GetVarHandle(szLex);
     if ((iErr = (!hvar || IsInput(hvar))))
       break; /* Is this reported ? */
 
-    if ( !(pMCVar = (PMCVAR) malloc (sizeof(MCVAR))))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetOptDSpec", NULL);
+    if ( !(pMCVar = (PMCVAR) malloc(sizeof(MCVAR))))
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetOptDSpec", NULL);
 
     pMCVar->hvar = hvar;
     pMCVar->iType = MCV_SETPOINTS;
     pMCVar->dParm[2] = pMCVar->dParm[3] = 0.0;
 
-    QueueListItem (panal->mc.plistMCVars, pMCVar);
+    QueueListItem(panal->mc.plistMCVars, pMCVar);
 
   } /* while */
 
-  panal->mc.nSetParms = ListLength (panal->mc.plistMCVars);
+  panal->mc.nSetParms = ListLength(panal->mc.plistMCVars);
 
   if (panal->mc.nSetParms == 0) {
     iErr = TRUE;
-    printf (
+    printf(
     "\nError: you must specify a list of parameters to read.\n\n");
     goto Exit_GetOptDSpec;
   }
 
   if (!iNLI) /* List terminator */
-    iErr = EGetPunct (pibIn, szLex, CH_RPAREN);
+    iErr = EGetPunct(pibIn, szLex, CH_RPAREN);
   else {
     iErr = TRUE;
-    ReportError (pibIn, RE_LEXEXPECTED, "identifier", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "identifier", szLex);
   } /* else */
 
 Exit_GetOptDSpec: ;
@@ -1309,14 +1432,14 @@ Exit_GetOptDSpec: ;
     printf ("Syntax:\n"
             "%s (\"Output_File\", \"Param_Sample_File\", nSamples, "
             "random_seed, <Forward or Backward>, "
-            "<param-id-list...>)\n\n", GetKeyword (KM_OPTDESIGN));
-    printf ("Exiting...\n");
-    exit (0);
+            "<param-id-list...>)\n\n", GetKeyword(KM_OPTDESIGN));
+    printf("Exiting...\n");
+    exit(0);
   }
   else
     panal->iType = AT_OPTDESIGN; /* Flag SetPoints anal if not chosen */
 
-  return (iErr);
+  return(iErr);
 
 } /* GetOptDSpec */
 
@@ -1328,7 +1451,7 @@ Exit_GetOptDSpec: ;
 */
 BOOL bGaveMCVaryUsage = FALSE; /* prevent multiple diagnostics */
 
-int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
+int GetDistribSpec (PINPUTBUF pibIn, PSTR szLex, PANALYSIS panal)
 {
   PLIST plist;
   PMCVAR pMCVar = NULL;
@@ -1342,39 +1465,39 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
                         (panal->iType == AT_SETPOINTS)  ||
                         (panal->iType == AT_OPTDESIGN)  ||
                         (panal->iType == AT_MCMC))) {
-    EatStatement (pibIn);  /* Ignore this Distrib() */
+    EatStatement(pibIn);  /* Ignore this Distrib() */
     goto Exit_MCVarySpec;
   }
 
   /* Get the Distrib() spec. Check syntax at each element. */
 
   /* Get the parameter to be varied */
-  if ((iErr = (EGetPunct (pibIn, szLex, CH_LPAREN) ||
-               ENextLex (pibIn, szLex, LX_IDENTIFIER))))
+  if ((iErr = (EGetPunct(pibIn, szLex, CH_LPAREN) ||
+               ENextLex(pibIn, szLex, LX_IDENTIFIER))))
     goto Done_GetMCVary;
 
-  if (GetKeywordCode (szLex, NULL) == KM_DATA) { /* Data keyword used */
+  if (GetKeywordCode(szLex, NULL) == KM_DATA) { /* Data keyword used */
     /* try to get opening parenthesis */
-    if (EGetPunct (pibIn, szLex, CH_LPAREN))
-      exit (0); /* error */ /* this should be more graceful */
+    if (EGetPunct(pibIn, szLex, CH_LPAREN))
+      exit(0); /* error */ /* this should be more graceful */
 
     /* get the name of variable predicted */
-    ENextLex (pibIn, szLex, LX_IDENTIFIER);
+    ENextLex(pibIn, szLex, LX_IDENTIFIER);
 
     /* Data variable must exist and must be an input, state or output */
-    if (!(hvar = GetVarHandle (szLex)) || IsParm (hvar))
+    if (!(hvar = GetVarHandle(szLex)) || IsParm(hvar))
       ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL,
                   "input, output or state variable", szLex);
 
     /* try to read off closing parenthesis */
     if (EGetPunct(pibIn, szDummy, CH_RPAREN))
-      exit (0); /* error */ /* this should be more graceful */
+      exit(0); /* error */ /* this should be more graceful */
   }
   else
-    if ((iErr = (!(hvar = GetVarHandle (szLex)) || /* Invalid variable name? */
+    if ((iErr = (!(hvar = GetVarHandle(szLex)) || /* Invalid variable name? */
                  IsInput(hvar))))
     {
-      ReportError (pibIn, RE_LEXEXPECTED, "state, output or parameter", szLex);
+      ReportError(pibIn, RE_LEXEXPECTED, "state, output or parameter", szLex);
       goto Done_GetMCVary;
     } /* if */
 
@@ -1382,17 +1505,17 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
   if (panal->iCurrentDepth == 0) /* not an MCMC simulation */
     plist = panal->mc.plistMCVars;
   else { /* an MCMC simulation */
-    if (!IsParm (hvar)) /* Distrib is for a likelihood definition */
+    if (!IsParm(hvar)) /* Distrib is for a likelihood definition */
       plist = panal->pCurrentLevel[panal->iCurrentDepth-1]->plistLikes;
     else
       plist = panal->pCurrentLevel[panal->iCurrentDepth-1]->plistMCVars;
   }
 
-  if (!(pMCVar = (PMCVAR) malloc (sizeof(MCVAR))))
-    ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetDistribSpec", NULL);
+  if (!(pMCVar = (PMCVAR) malloc(sizeof(MCVAR))))
+    ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetDistribSpec", NULL);
 
-  if(!(pMCVar->pszName = (PSTR) malloc(strlen (szLex)+1)))
-    ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetDistribSpec", NULL);
+  if(!(pMCVar->pszName = (PSTR) malloc(strlen(szLex)+1)))
+    ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetDistribSpec", NULL);
 
   /* Initialize pMCVar */
   strcpy(pMCVar->pszName, szLex);
@@ -1413,7 +1536,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
 
   /* Get the distribution type */
   GetOptPunct(pibIn, szLex, ',');
-  iErr |= ENextLex (pibIn, szLex, LX_IDENTIFIER);
+  iErr |= ENextLex(pibIn, szLex, LX_IDENTIFIER);
   pMCVar->iType = McvFromLex(szLex);
   if (iErr |= pMCVar->iType < 0) {
     ReportError(pibIn, RE_LEXEXPECTED, "distribution-type", szLex);
@@ -1446,10 +1569,10 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     case MCV_NORMALV:    /* 2 parameters, mean and VARIANCE */
     case MCV_LOGNORMALV: /* ~ */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
       /* set the range */
@@ -1468,7 +1591,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_HALFNORMAL: /* 1 parameter: SD; mean is set to zero */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
       /* Set the mean */
@@ -1488,10 +1611,10 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     case MCV_TRUNCNORMALV:    /* VARIANCE instead of SD */
     case MCV_TRUNCLOGNORMALV: /* ~ */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
       /* Set min-max range defaults */
@@ -1509,15 +1632,15 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
 
       /* Look if a min-max range is included. For truncated types
          it is required. */
-      SkipWhitespace (pibIn);
-      if ((pMCVar->iType == MCV_BETA) && NextChar (pibIn) == CH_RPAREN)
+      SkipWhitespace(pibIn);
+      if ((pMCVar->iType == MCV_BETA) && NextChar(pibIn) == CH_RPAREN)
         break; /* The spec is finished */
 
       /* Get the min and max */
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 2, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 2, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 3, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 3, pMCVar)))
         goto Done_GetMCVary;
 
       break;
@@ -1525,7 +1648,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_CHI2: /* only one parameter: degrees of freedom */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       /* set the range */
@@ -1535,9 +1658,9 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
       break;
 
     /* ----------------------------------------------------------------------*/
-    case MCV_BINOMIAL: /* 2 parameters, p and n */
+    case MCV_BINOMIAL: /* 2 parameters, p and N */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       if((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
@@ -1545,7 +1668,6 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
 
       /* set the range */
       pMCVar->dParm[2] = 0.0; /* minimum */
-      /* check if the parameter N is symbolic */
       if (pMCVar->iParmType[1] != MCVP_FIXD)
         /* N symbolic: could be anything: assign DBL_MAX as maximum */
         pMCVar->dParm[3] = DBL_MAX; /* FB 18/07/97 */
@@ -1556,18 +1678,33 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
       break;
 
     /* ----------------------------------------------------------------------*/
+    case MCV_NEGATIVEBINOM: /* 2 parameters, r and p */
+
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
+        goto Done_GetMCVary;
+
+      if((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
+        goto Done_GetMCVary;
+
+      /* set the range */
+      pMCVar->dParm[2] = 0.0;     /* minimum */
+      pMCVar->dParm[3] = DBL_MAX; /* maximum */
+
+      break;
+
+    /* ----------------------------------------------------------------------*/
     case MCV_PIECEWISE: /* 4 parameters, note the particular order */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 2, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 2, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 3, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 3, pMCVar)))
         goto Done_GetMCVary;
 
       break;
@@ -1575,7 +1712,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_EXPONENTIAL: /* only one parameter: inverse scale */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       /* set the range */
@@ -1588,10 +1725,10 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     case MCV_GGAMMA:
     case MCV_INVGGAMMA: /* 2 parameter: shape and inverse scale */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
       /* set the range */
@@ -1603,23 +1740,23 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_TRUNCINVGGAMMA: /* 4 parameter: shape, inverse scale and bounds */
 
-#ifndef _HAS_GSL_LIB
-      printf ("Warning: The truncated inverse gamma density cannot be\n");
-      printf ("         used in MCMC simulations if the GNU Scientific\n");
-      printf ("         Library is not installed.\n");
+#ifndef HAVE_LIBGSL
+      printf("Warning: The truncated inverse gamma density cannot be\n");
+      printf("         used in MCMC simulations if the GNU Scientific\n");
+      printf("         Library is not installed.\n");
 #endif
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
       /* Get the min and max */
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 2, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 2, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 3, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 3, pMCVar)))
         goto Done_GetMCVary;
 
       break;
@@ -1627,7 +1764,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_POISSON: /* 1 parameter: rate */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       /* set the range */
@@ -1641,13 +1778,13 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     case MCV_GENLOGNORMAL: /* 3 parameter: mean, sdnorm,   sdlognorm */
     case MCV_STUDENTT:     /* 3 parameter: dof,  location, scale */
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 1, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 1, pMCVar)))
         goto Done_GetMCVary;
 
-      if ((iErr = GetDistribParam (pibIn, szLex, plist, 2, pMCVar)))
+      if ((iErr = GetDistribParam(pibIn, szLex, plist, 2, pMCVar)))
         goto Done_GetMCVary;
 
       /* set the last parameter, unused */
@@ -1658,7 +1795,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_CAUCHY:     /* one parameter: scale */
 
-       if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+       if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       pMCVar->dParm[1] =  DBL_MAX;
@@ -1670,7 +1807,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     /* ----------------------------------------------------------------------*/
     case MCV_HALFCAUCHY: /* one parameter: scale */
 
-       if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+       if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       pMCVar->dParm[1] = DBL_MAX * 0.5;
@@ -1689,7 +1826,7 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
         goto Done_GetMCVary;
       }
 
-       if ((iErr = GetDistribParam (pibIn, szLex, plist, 0, pMCVar)))
+       if ((iErr = GetDistribParam(pibIn, szLex, plist, 0, pMCVar)))
         goto Done_GetMCVary;
 
       pMCVar->dParm[1] = DBL_MAX * 0.5;
@@ -1700,12 +1837,12 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
 
     /* ----------------------------------------------------------------------*/
     default:
-        ReportRunTimeError (panal, RE_UNKNOWNDIST | RE_FATAL, "GetDistribSpec");
+        ReportRunTimeError(panal, RE_UNKNOWNDIST | RE_FATAL, "GetDistribSpec");
         break;
 
   } /* switch */
 
-  EGetPunct (pibIn, szLex, CH_RPAREN);
+  EGetPunct(pibIn, szLex, CH_RPAREN);
 
   /* Check for a range error if the bounds are numeric. If there is a problem,
      correct it, but issue a warning in case this is wrong. */
@@ -1715,31 +1852,31 @@ int GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex)
     double dTmp = pMCVar->dParm[3];    /* Swap ranges */
     pMCVar->dParm[3] = pMCVar->dParm[2];
     pMCVar->dParm[2] = dTmp;
-    ReportError (pibIn, RE_MAXMIN_RANGE | RE_WARNING, NULL, NULL);
+    ReportError(pibIn, RE_MAXMIN_RANGE | RE_WARNING, NULL, NULL);
   }
 
   /* If there's no error at this point, queue the variation in
      the Monte Carlo record(s). */
   if (!iErr) {
-    QueueListItem (plist, pMCVar);
+    QueueListItem(plist, pMCVar);
   } /* if */
 
 Done_GetMCVary: ;
 
   if (iErr) {
-    if (pMCVar) free (pMCVar);
+    if (pMCVar) free(pMCVar);
 
     if (!bGaveMCVaryUsage) {
-      printf ("\nSyntax: Check the syntax of %s.\n", GetKeyword (KM_MCVARY));
+      printf("\nSyntax: Check the syntax of %s.\n", GetKeyword (KM_MCVARY));
       bGaveMCVaryUsage = TRUE;
     }
 
-    ReportError (pibIn, RE_SYNTAXERR | RE_FATAL, NULL, NULL);
+    ReportError(pibIn, RE_SYNTAXERR | RE_FATAL, NULL, NULL);
   }
 
 Exit_MCVarySpec: ;
 
-  return (iErr);
+  return(iErr);
 
 } /* GetDistribSpec */
 
@@ -1793,39 +1930,39 @@ int GetDistribParam (PINPUTBUF pibIn, PSTR szLex, PLIST plist, int n,
   int iLex, iCode;
   HVAR hvar;
 
-  GetOptPunct (pibIn, szLex, ',');
+  GetOptPunct(pibIn, szLex, ',');
   if (n != 3)
-    NextLex (pibIn, szLex, &iLex);
+    NextLex(pibIn, szLex, &iLex);
   else {
-    SkipWhitespace (pibIn);
+    SkipWhitespace(pibIn);
     iLex = LX_NULL;
-    if (NextChar (pibIn) != CH_RPAREN)
-      NextLex (pibIn, szLex, &iLex);
+    if (NextChar(pibIn) != CH_RPAREN)
+      NextLex(pibIn, szLex, &iLex);
   }
 
   if (iLex == LX_IDENTIFIER) { /* symbol used for parameter */
 
-    iCode = GetKeywordCode_in_context (szLex, CN_FUNCARG);
+    iCode = GetKeywordCode_in_context(szLex, CN_FUNCARG);
 
     if ((iCode == KM_PREDICTION) || (iCode == KM_DATA)) {
       /* Prediction or Data keywords used */
 
       /* Only inputs, states and outputs can have predicted or data
          parameters  */
-      if (IsParm (pMCVar->hvar))
-        ReportError (pibIn, RE_BADCONTEXT | RE_FATAL, szLex, NULL);
+      if (IsParm(pMCVar->hvar))
+        ReportError(pibIn, RE_BADCONTEXT | RE_FATAL, szLex, NULL);
 
       /* Try to get opening parenthesis */
-      if (EGetPunct (pibIn, szLex, CH_LPAREN))
+      if (EGetPunct(pibIn, szLex, CH_LPAREN))
         return 1; /* error */
 
       /* Get the name of variable specified */
-      NextLex (pibIn, szLex, &iLex);
+      NextLex(pibIn, szLex, &iLex);
 
       /* Specified variable must exist and be input, state or output */
-      if (!(hvar = GetVarHandle (szLex)) || IsParm (hvar))
-        ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL,
-                    "input, output or state variable", szLex);
+      if (!(hvar = GetVarHandle(szLex)) || IsParm(hvar))
+        ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL,
+                   "input, output or state variable", szLex);
 
       /* Try to get closing parenthesis */
       if (EGetPunct(pibIn, szLex, CH_RPAREN))
@@ -1837,15 +1974,15 @@ int GetDistribParam (PINPUTBUF pibIn, PSTR szLex, PLIST plist, int n,
          be declared and should not be an input or an output or a state
          (because those should use keywords); so it should be
          a parameter - FB 18/10/98 */
-      if (!(hvar = GetVarHandle (szLex)) || !IsParm(hvar))
-        ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, "parameter", szLex);
+      if (!(hvar = GetVarHandle(szLex)) || !IsParm(hvar))
+        ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, "parameter", szLex);
     }
 
     /* No self-dependency at level 0 allowed, except in Optimal design */
     if (!(panal->iType == AT_OPTDESIGN) &&
         ((panal->iCurrentDepth == 0 && hvar == pMCVar->hvar) ||
-         !CheckDistribParam (plist, pMCVar->hvar, hvar)))
-      ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, "valid parameter", szLex);
+         !CheckDistribParam(plist, pMCVar->hvar, hvar)))
+      ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, "valid parameter", szLex);
 
     /* Declare it a symbolic parameter */
     if (iCode == KM_PREDICTION)
@@ -1898,16 +2035,16 @@ int GetSetPointsSpec (PINPUTBUF pibIn, PANALYSIS  panal, PSTR szLex)
 
   /* MonteCarlo sampling can be mixed with SetPoints sampling if Distrib
      specs appear after the SetPoint spec */
-  if (ListLength (panal->mc.plistMCVars) > 0) {
+  if (ListLength(panal->mc.plistMCVars) > 0) {
     printf ("Error: Distrib() statements can only appear after the SetPoints()"
             "specification, not before - Exiting\n\n");
-    exit (0);
+    exit(0);
   }
 
   /* Try to get open paren and filenames */
-  if ((iErr = EGetPunct (pibIn, szLex, CH_LPAREN) ||
-              GetStringArg (pibIn, &panal->mc.szMCOutfilename, szLex, FALSE) ||
-              GetStringArg (pibIn, &panal->mc.szSetPointsFilename, szLex,
+  if ((iErr = EGetPunct(pibIn, szLex, CH_LPAREN) ||
+              GetStringArg(pibIn, &panal->mc.szMCOutfilename, szLex, FALSE) ||
+              GetStringArg(pibIn, &panal->mc.szSetPointsFilename, szLex,
                             TRUE))) {
     goto Exit_GetSetPointsSpec;
   }
@@ -1917,77 +2054,78 @@ int GetSetPointsSpec (PINPUTBUF pibIn, PANALYSIS  panal, PSTR szLex)
 
   /* There has to be a restart file */
   if (!panal->mc.szSetPointsFilename)
-    ReportError (pibIn, RE_SPECERR | RE_FATAL, "Missing setpoints file", NULL);
+    ReportError(pibIn, RE_SPECERR | RE_FATAL, "Missing setpoints file", NULL);
 
   /* Output file and setpoint file have to be different */
   if (!MyStrcmp(panal->mc.szMCOutfilename, panal->mc.szSetPointsFilename))
-    ReportError (pibIn, RE_SPECERR | RE_FATAL, "Same name for 2 files", NULL);
+    ReportError(pibIn, RE_SPECERR | RE_FATAL, "Same name for 2 files", NULL);
 
   /* Try to get number of runs */
-  GetOptPunct (pibIn, szLex, ',');
-  if ((iErr = ENextLex (pibIn, szLex, LX_INTEGER)))
+  GetOptPunct(pibIn, szLex, ',');
+  if ((iErr = ENextLex(pibIn, szLex, LX_INTEGER)))
     goto Exit_GetSetPointsSpec;
 
-  panal->mc.nRuns = atol (szLex);
+  panal->mc.nRuns = atol(szLex);
 
   /* Try to get identifier list */
-  while ((iNLI=NextListItem (pibIn, szLex, LX_IDENTIFIER, 1, CH_RPAREN)) > 0) {
+  while ((iNLI=NextListItem(pibIn, szLex, LX_IDENTIFIER, 1, CH_RPAREN)) > 0) {
     /* check if szLex is a scalar or an array and act accordingly */
     iLB = iUB = -1;
-    if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
-      GetArrayBounds (pibIn, &iLB, &iUB);
+    if (GetPunct(pibIn, szTmp, '[')) /* array found, read bounds */
+      GetArrayBounds(pibIn, &iLB, &iUB);
 
     if (iUB == -1) { /* scalar, store and continue */
       hvar = GetVarHandle(szLex);
       if ((iErr = (!hvar || IsInput(hvar))))
         break; /* will generate an error message */
 
-      if ( !(pMCVar = (PMCVAR) malloc (sizeof(MCVAR))))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetSetPointsSpec", NULL);
+      if ( !(pMCVar = (PMCVAR) malloc(sizeof(MCVAR))))
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetSetPointsSpec", NULL);
 
       pMCVar->hvar = hvar;
       pMCVar->iType = MCV_SETPOINTS;
       pMCVar->dParm[2] = pMCVar->dParm[3] = 0.0;
 
-      QueueListItem (panal->mc.plistMCVars, pMCVar);
+      QueueListItem(panal->mc.plistMCVars, pMCVar);
     }
     else { /* array */
 
       for (j = iLB; j < iUB; j++) {
         sprintf(szTmp, "%s_%ld", szLex, j); /* create names */
 
-        hvar = GetVarHandle (szTmp);
+        hvar = GetVarHandle(szTmp);
         if ((iErr = (!hvar || IsInput(hvar))))
           break; /* will generate an error message */
 
-        if ( !(pMCVar = (PMCVAR) malloc (sizeof(MCVAR))))
+        if ( !(pMCVar = (PMCVAR) malloc(sizeof(MCVAR))))
           ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetSetPointsSpec", NULL);
 
         pMCVar->hvar = hvar;
         pMCVar->iType = MCV_SETPOINTS;
         pMCVar->dParm[2] = pMCVar->dParm[3] = 0.0;
 
-        QueueListItem (panal->mc.plistMCVars, pMCVar);
+        QueueListItem(panal->mc.plistMCVars, pMCVar);
       }
     } /* end else */
 
   } /* while */
 
-  panal->mc.nSetParms = ListLength (panal->mc.plistMCVars);
+  panal->mc.nSetParms = ListLength(panal->mc.plistMCVars);
 
   /* FB 19 nov 96 */
   if (panal->mc.nSetParms == 0) {
     iErr = TRUE;
-    printf (
+    printf(
     "\nError: you must specify a list of parameters to read.\n\n");
     goto Exit_GetSetPointsSpec;
   }
 
   if (!iNLI) /* List terminator */
-    iErr = ((szTmp[0] != CH_RPAREN) && (EGetPunct (pibIn, szLex, CH_RPAREN))) || InitSetPoints (&panal->mc);
+    iErr = ((szTmp[0] != CH_RPAREN) && (EGetPunct(pibIn, szLex, CH_RPAREN))) ||
+           InitSetPoints(&panal->mc);
   else {
     iErr = TRUE;
-    ReportError (pibIn, RE_LEXEXPECTED, "identifier", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "identifier", szLex);
   } /* else */
 
 Exit_GetSetPointsSpec: ;
@@ -1995,14 +2133,14 @@ Exit_GetSetPointsSpec: ;
   if (iErr) {
     printf ("Syntax:\n"
              "%s (\"OutputFile\", \"SetPtsFile\", nRuns, "
-             "<param-id-list...>)\n\n", GetKeyword (KM_SETPOINTS));
-    printf ("Exiting...\n");
-    exit (0);
+             "<param-id-list...>)\n\n", GetKeyword(KM_SETPOINTS));
+    printf("Exiting...\n");
+    exit(0);
   }
   else
     panal->iType = AT_SETPOINTS; /* Flag SetPoints anal */
 
-  return (iErr);
+  return(iErr);
 
 } /* GetSetPointsSpec */
 
@@ -2018,15 +2156,15 @@ static int vrgiMCArgTypes[NMC_ARGS] = {LX_STRING, LX_INTEGER, LX_NUMBER};
 
   int iErr = 0;
 
-  iErr = !GetFuncArgs (pibIn, NMC_ARGS, vrgiMCArgTypes, vrgszlexArgs[0]);
+  iErr = !GetFuncArgs(pibIn, NMC_ARGS, vrgiMCArgTypes, vrgszlexArgs[0]);
 
   if (!iErr) {
     if (*vrgszlexArgs[0]) {
       if ( !(panal->mc.szMCOutfilename =
              (PSTR) malloc(MyStrlen(vrgszlexArgs[0]) + 1)))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetMonteCarloSpec", NULL);
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetMonteCarloSpec", NULL);
 
-      MyStrcpy (panal->mc.szMCOutfilename, vrgszlexArgs[0]);
+      MyStrcpy(panal->mc.szMCOutfilename, vrgszlexArgs[0]);
       panal->bAllocatedFileName = TRUE;
     }
 
@@ -2035,12 +2173,12 @@ static int vrgiMCArgTypes[NMC_ARGS] = {LX_STRING, LX_INTEGER, LX_NUMBER};
   } /* if */
   else
     printf ("Syntax: %s (szOutfilename, nRuns, dSeed)\n\n",
-            GetKeyword (KM_MONTECARLO));
+            GetKeyword(KM_MONTECARLO));
 
   if (!iErr)
     panal->iType = AT_MONTECARLO; /* Flag as MC */
 
-  return (iErr);
+  return(iErr);
 
 } /* GetMonteCarloSpec */
 
@@ -2062,29 +2200,29 @@ BOOL GetParmMod (PINPUTBUF pibIn, PSTRLEX szLex)
   PVARMOD pvarmod; /* Pointer to the variable modification */
 
   if ((iErr = !hvar))
-    ReportError (pibIn, RE_LEXEXPECTED, "model-variable", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "model-variable", szLex);
 
   else {
     /* Allocate space and initialize modification */
 
-    if ( !(pvarmod = (PVARMOD) malloc (sizeof(VARMODIFICATION))))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
+    if ( !(pvarmod = (PVARMOD) malloc(sizeof(VARMODIFICATION))))
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
 
     pvarmod->hvar = hvar; /* The variable handle */
 
-    if (!GetOptPunct (pibIn, szPunct, '=')) { /* Try to get '=' */
+    if (!GetOptPunct(pibIn, szPunct, '=')) { /* Try to get '=' */
       iErr = szPunct[1] = '=';
-      ReportError (pibIn, RE_EXPECTED, szPunct, NULL);
+      ReportError(pibIn, RE_EXPECTED, szPunct, NULL);
     }
 
-    else if (IsInput (hvar)) { /* Process INPUT */
-      if ( !(pvarmod->uvar.pifn = (PIFN) malloc (sizeof(IFN))))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
+    else if (IsInput(hvar)) { /* Process INPUT */
+      if ( !(pvarmod->uvar.pifn = (PIFN) malloc(sizeof(IFN))))
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
 
       iErr = !pvarmod->uvar.pifn
-             || !GetInputFn (pibIn, NULL, pvarmod->uvar.pifn);
+             || !GetInputFn(pibIn, NULL, pvarmod->uvar.pifn);
       if (iErr) {
-        free (pvarmod->uvar.pifn); /* Cleanup if error */
+        free(pvarmod->uvar.pifn); /* Cleanup if error */
         pvarmod->uvar.pifn = NULL;
       }
     } /* else if */
@@ -2095,18 +2233,18 @@ BOOL GetParmMod (PINPUTBUF pibIn, PSTRLEX szLex)
 
     if (!iErr) { /* No errors, add mod to list */
       if(panal->iCurrentDepth == 0 || panal->wContext == CN_EXPERIMENT)
-        QueueListItem (pexp->plistParmMods, pvarmod);
+        QueueListItem(pexp->plistParmMods, pvarmod);
       else
-        QueueListItem (panal->pCurrentLevel[panal->iCurrentDepth-1]->plistVars,
-                       pvarmod);
-      iErr = GetTerminator (pibIn, szLex);
+        QueueListItem(panal->pCurrentLevel[panal->iCurrentDepth-1]->plistVars,
+                      pvarmod);
+      iErr = GetTerminator(pibIn, szLex);
     } /* if */
     else /* Invalid mod, cleanup */
-      free (pvarmod);
+      free(pvarmod);
 
   } /* else valid id */
 
-  return ((BOOL) iErr);
+  return((BOOL) iErr);
 
 } /* GetParmMod */
 
@@ -2126,24 +2264,24 @@ BOOL GetParmMod2 (PINPUTBUF pibIn, PSTRLEX szLex, PSTREQN szEqn)
   PEXPERIMENT pexp = panal->pexpCurrent;
 
   if ((iErr = !hvar))
-    ReportError (pibIn, RE_LEXEXPECTED, "model-variable", szLex);
+    ReportError(pibIn, RE_LEXEXPECTED, "model-variable", szLex);
 
   else { /* valid ID */
     /* Allocate space and initialize modification */
 
-    if ( !(pvarmod = (PVARMOD) malloc (sizeof(VARMODIFICATION))))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
+    if ( !(pvarmod = (PVARMOD) malloc(sizeof(VARMODIFICATION))))
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
 
     pvarmod->hvar = hvar; /* The variable handle */
 
-    if (IsInput (hvar)) { /* Process INPUT */
-      if ( !(pvarmod->uvar.pifn = (PIFN) malloc (sizeof(IFN))))
-        ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
+    if (IsInput(hvar)) { /* Process INPUT */
+      if ( !(pvarmod->uvar.pifn = (PIFN) malloc(sizeof(IFN))))
+        ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "GetParmMod", NULL);
 
       iErr = !pvarmod->uvar.pifn
-             || !GetInputFn (pibIn, NULL, pvarmod->uvar.pifn);
+             || !GetInputFn(pibIn, NULL, pvarmod->uvar.pifn);
       if (iErr) {
-        free (pvarmod->uvar.pifn); /* Cleanup if error */
+        free(pvarmod->uvar.pifn); /* Cleanup if error */
         pvarmod->uvar.pifn = NULL;
       }
     }
@@ -2153,17 +2291,17 @@ BOOL GetParmMod2 (PINPUTBUF pibIn, PSTRLEX szLex, PSTREQN szEqn)
 
     if (!iErr) { /* No errors, add mod to list */
       if(panal->iCurrentDepth == 0 || panal->wContext == CN_EXPERIMENT)
-        QueueListItem (pexp->plistParmMods, pvarmod);
+        QueueListItem(pexp->plistParmMods, pvarmod);
       else
-        QueueListItem (panal->pCurrentLevel[panal->iCurrentDepth-1]->plistVars,
-                       pvarmod);
+        QueueListItem(panal->pCurrentLevel[panal->iCurrentDepth-1]->plistVars,
+                      pvarmod);
     }
     else /* Invalid mod, cleanup */
-      free (pvarmod);
+      free(pvarmod);
 
   } /* else valid id */
 
-  return ((BOOL) iErr);
+  return((BOOL) iErr);
 
 } /* GetParmMod2 */
 
@@ -2189,12 +2327,12 @@ void NewExperiment (PINPUTBUF pibIn)
   if (panal->iCurrentDepth == 0) {
     panal->expGlobal.iExp++;    /* Increment number of experiment */
     panal->pexpCurrent = panal->rgpExps[panal->expGlobal.iExp - 1] =
-                         (PEXPERIMENT) malloc (sizeof(EXPERIMENT));
+                         (PEXPERIMENT) malloc(sizeof(EXPERIMENT));
     if (!panal->pexpCurrent)
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "NewExperiment()", NULL);
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "NewExperiment()", NULL);
 
     if (panal->rank == 0)
-      printf ("Reading experiment %d.\n", panal->expGlobal.iExp);
+      printf("Reading experiment %d.\n", panal->expGlobal.iExp);
   }
   else {
     plevel = panal->pLevels[panal->iInstances - 1];
@@ -2202,10 +2340,10 @@ void NewExperiment (PINPUTBUF pibIn)
       plevel = plevel->pLevels[plevel->iInstances - 1];
     }
     if (plevel->iInstances == MAX_INSTANCES - 1)
-      ReportError (pibIn, RE_TOOMANYINST | RE_FATAL, "NewExperiment", NULL);
+      ReportError(pibIn, RE_TOOMANYINST | RE_FATAL, "NewExperiment", NULL);
     n = panal->pCurrentLevel[panal->iCurrentDepth - 1]->iInstances++;
     if (!(plevel = plevel->pLevels[n] = (PLEVEL)malloc(sizeof(LEVEL))))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "NewExperiment", NULL);
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "NewExperiment", NULL);
     plevel->iInstances = 0;
     plevel->iSequence = n + 1;
     plevel->iDepth = panal->iCurrentDepth;
@@ -2218,8 +2356,8 @@ void NewExperiment (PINPUTBUF pibIn)
     plevel->plistMCVars = InitList();
     plevel->plistLikes = InitList();
 
-    if (!(plevel->pexpt = (PEXPERIMENT) malloc (sizeof (EXPERIMENT))))
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "NewExperiment", NULL);
+    if (!(plevel->pexpt = (PEXPERIMENT) malloc(sizeof(EXPERIMENT))))
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "NewExperiment", NULL);
 
     panal->pexpCurrent = plevel->pexpt;
     panal->pexpCurrent->iExp = panal->expGlobal.iExp = ++panal->iExpts;
@@ -2231,7 +2369,7 @@ void NewExperiment (PINPUTBUF pibIn)
               panal->pCurrentLevel[panal->iCurrentDepth-2]->iInstances);
   }
 
-  memcpy (panal->pexpCurrent, &panal->expGlobal, sizeof(EXPERIMENT));
+  memcpy(panal->pexpCurrent, &panal->expGlobal, sizeof(EXPERIMENT));
   panal->wContext = CN_EXPERIMENT;
   panal->pexpCurrent->plistParmMods = InitList();    /* Local mods */
   panal->pexpCurrent->os.plistPrintRecs = InitList();
@@ -2249,20 +2387,20 @@ BOOL EndExperiment (PINPUTBUF pibIn, PANALYSIS panal)
 {
   BOOL bReturn;
 
-  bReturn = !ErrorsReported (pibIn);
+  bReturn = !ErrorsReported(pibIn);
 
   if (!bReturn) {
     /* Experiment had errors.  Cleanup this space and continue */
-    ReportError (pibIn, RE_ERRORSINEXP | RE_FATAL,
+    ReportError(pibIn, RE_ERRORSINEXP | RE_FATAL,
          (PSTR) &panal->pexpCurrent->iExp, NULL);
-    ClearErrors (pibIn);
+    ClearErrors(pibIn);
     panal->rgpExps[--panal->expGlobal.iExp] = NULL;
-    free (panal->pexpCurrent);
+    free(panal->pexpCurrent);
   } /* if */
 
   else {
     /* Create space for outputs and data */
-    PrepareOutSpec (panal->pexpCurrent);
+    PrepareOutSpec(panal->pexpCurrent);
   }
 
   /* Reset current exp to global context. */
@@ -2273,7 +2411,7 @@ BOOL EndExperiment (PINPUTBUF pibIn, PANALYSIS panal)
   if (panal->iType == AT_MCMC && panal->iCurrentDepth-- == 0)
     return FALSE;
 
-  return (bReturn);
+  return(bReturn);
 
 } /* EndExperiment */
 
@@ -2286,19 +2424,19 @@ BOOL EndExperiment (PINPUTBUF pibIn, PANALYSIS panal)
 */
 int SetLevel(PINPUTBUF pibIn)
 {
-  PSTRLEX szPunct;
+  PSTRLEX   szPunct;
   PANALYSIS panal = (PANALYSIS)pibIn->pInfo;
-  PLEVEL plevel;
-  BYTE n;
+  PLEVEL    plevel;
+  int       n;
 
   if (panal->iType != AT_MCMC)
-    ReportError (pibIn, RE_TYPENOTMCMC | RE_FATAL, "SetLevel", NULL);
+    ReportError(pibIn, RE_TYPENOTMCMC | RE_FATAL, "SetLevel", NULL);
 
   if (panal->iCurrentDepth == MAX_LEVELS)
-    ReportError (pibIn, RE_TOOMANYLEVELS | RE_FATAL, "SetLevel", NULL);
+    ReportError(pibIn, RE_TOOMANYLEVELS | RE_FATAL, "SetLevel", NULL);
 
   if (panal->wContext == CN_EXPERIMENT)
-    ReportError (pibIn, RE_LEVINEXPT | RE_FATAL, "SetLevel", NULL);
+    ReportError(pibIn, RE_LEVINEXPT | RE_FATAL, "SetLevel", NULL);
 
   if (EGetPunct(pibIn, szPunct, CH_LBRACE))
     return 1;
@@ -2306,9 +2444,9 @@ int SetLevel(PINPUTBUF pibIn)
   if (panal->iCurrentDepth == 0) {
 
     plevel = panal->pLevels[panal->iInstances++]
-           = (PLEVEL) malloc (sizeof (LEVEL));
+           = (PLEVEL) malloc(sizeof(LEVEL));
     if (plevel == NULL)
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "SetLevel", NULL);
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "SetLevel", NULL);
 
     /* we do not want more than 1 top level, exit */
     if (panal->iInstances > 1) {
@@ -2318,7 +2456,7 @@ int SetLevel(PINPUTBUF pibIn)
 
     plevel->iSequence = panal->iInstances;
     if (panal->rank == 0)
-      printf ("New level - depth 1, instance %d\n", panal->iInstances);
+      printf("New level - depth 1, instance %d\n", panal->iInstances);
 
   }
   else {
@@ -2329,7 +2467,7 @@ int SetLevel(PINPUTBUF pibIn)
       plevel = plevel->pLevels[plevel->iInstances - 1];
 
     if (plevel->iInstances == MAX_INSTANCES - 1)
-      ReportError (pibIn, RE_TOOMANYINST | RE_FATAL, "SetLevel", NULL);
+      ReportError(pibIn, RE_TOOMANYINST | RE_FATAL, "SetLevel", NULL);
 
     n = panal->pCurrentLevel[panal->iCurrentDepth-1]->iInstances++;
 
@@ -2337,7 +2475,7 @@ int SetLevel(PINPUTBUF pibIn)
            = (PLEVEL)malloc(sizeof(LEVEL));
 
     if (plevel == NULL)
-      ReportError (pibIn, RE_OUTOFMEM | RE_FATAL, "SetLevel", NULL);
+      ReportError(pibIn, RE_OUTOFMEM | RE_FATAL, "SetLevel", NULL);
 
     plevel->iSequence = n + 1;
     if (panal->rank == 0)
@@ -2384,13 +2522,13 @@ void FreeLevels (PANALYSIS panal)
 
   for (n = 0; n < panal->iInstances; n++)
     if (panal->pLevels[n] != NULL)
-      FreeOneLevel (panal->pLevels[n]);
+      FreeOneLevel(panal->pLevels[n]);
 
   if (panal->bAllocatedFileName)
     free(panal->gd.szGout);
 
-  FreeList (&panal->mc.plistMCVars, NULL, TRUE);
-  FreeList (&panal->expGlobal.plistParmMods, NULL, TRUE);
+  FreeList(&panal->mc.plistMCVars, NULL, TRUE);
+  FreeList(&panal->expGlobal.plistParmMods, NULL, TRUE);
 
   free(panal->expGlobal.is.iwork);
   free(panal->expGlobal.is.rwork);
@@ -2407,8 +2545,8 @@ void FreeLevels (PANALYSIS panal)
 int FreeMCVar (PVOID pData, PVOID pUserInfo)
 {
   PMCVAR pMCVar = (PMCVAR) pData;
-  FreeList (&pMCVar->plistDependents, NULL, TRUE);
-  free (pMCVar->pszName);
+  FreeList(&pMCVar->plistDependents, NULL, TRUE);
+  free(pMCVar->pszName);
   /* dummy */
   return 0;
 
@@ -2439,9 +2577,9 @@ int FreePrintRec (PVOID pData, PVOID pUserInfo)
 {
   PPRINTREC pPrintRecord = (PPRINTREC) pData;
 
-  free (pPrintRecord->pdTimes);
-  free (pPrintRecord->szOutputName);
-  free (pPrintRecord);
+  free(pPrintRecord->pdTimes);
+  free(pPrintRecord->szOutputName);
+  free(pPrintRecord);
   return 0;
 
 } /* FreePrintRec */
@@ -2543,14 +2681,14 @@ void ProcessWord (PINPUTBUF pibIn, PSTR szLex, PSTR szEqn)
 
   panal = (PANALYSIS) pibIn->pInfo;
 
-  iKWCode = GetKeywordCode (szLex, &fContext);
+  iKWCode = GetKeywordCode(szLex, &fContext);
 
   assert(panal->wContext != CN_END);
 
   if ((iErr =
         (iKWCode                                 /* Is a keyword */
          && !(fContext & panal->wContext))))     /* In invalid context */
-    ReportError (pibIn, RE_BADCONTEXT, szLex, NULL);
+    ReportError(pibIn, RE_BADCONTEXT, szLex, NULL);
 
   else {
     switch (iKWCode) {
@@ -2559,29 +2697,29 @@ void ProcessWord (PINPUTBUF pibIn, PSTR szLex, PSTR szEqn)
 
       /* check if it is an array */
       iLB = iUB = -1;
-      if (GetPunct (pibIn, szTmp, '[')) /* array found, read bounds */
-        GetArrayBounds (pibIn, &iLB, &iUB);
+      if (GetPunct(pibIn, szTmp, '[')) /* array found, read bounds */
+        GetArrayBounds(pibIn, &iLB, &iUB);
       else
         if (!strcmp(szTmp, "=")) /* put it back... */
           pibIn->pbufCur--;
 
       if (iUB == -1) { /* scalar */
-        iErr = GetParmMod (pibIn, szLex);
+        iErr = GetParmMod(pibIn, szLex);
       }
       else { /* array */
 
-        if (GetPunct (pibIn, szTmp, '=')) { /* read assignment */
-          GetStatement (pibIn, szEqn);	
+        if (GetPunct(pibIn, szTmp, '=')) { /* read assignment */
+          GetStatement(pibIn, szEqn);	
           for (i = iLB; i < iUB; i++) {
-            sprintf (szTmp, "%s_%ld", szLex, i); /* create names */
-            UnrollEquation (pibIn, i, szEqn, szEqnU);
-            iErr = GetParmMod2 (pibIn, szTmp, szEqnU);
+            sprintf(szTmp, "%s_%ld", szLex, i); /* create names */
+            UnrollEquation(pibIn, i, szEqn, szEqnU);
+            iErr = GetParmMod2(pibIn, szTmp, szEqnU);
             if (iErr)
 	      break;
           }
         }
         else {
-          ReportError (pibIn, RE_LEXEXPECTED | RE_FATAL, "= or [", NULL);
+          ReportError(pibIn, RE_LEXEXPECTED | RE_FATAL, "= or [", NULL);
         }
       }
       break;
@@ -2589,71 +2727,71 @@ void ProcessWord (PINPUTBUF pibIn, PSTR szLex, PSTR szEqn)
     /* Otherwise process the following keywords */
 
     case KM_PRINT:
-      iErr = GetPrint (pibIn, szLex, &panal->pexpCurrent->os);
+      iErr = GetPrint(pibIn, szLex, &panal->pexpCurrent->os);
       break;
 
     case KM_PRINTSTEP:
-      iErr = GetPrintStep (pibIn, szLex, &panal->pexpCurrent->os);
+      iErr = GetPrintStep(pibIn, szLex, &panal->pexpCurrent->os);
       break;
 
     case KM_EXPERIMENT:
-      if (!(iErr = EGetPunct (pibIn, szTmp, CH_LBRACE)))
-        NewExperiment (pibIn);
+      if (!(iErr = EGetPunct(pibIn, szTmp, CH_LBRACE)))
+        NewExperiment(pibIn);
       break;
 
     case KM_LEVEL:
-      iErr = SetLevel (pibIn);
+      iErr = SetLevel(pibIn);
       break;
 
     case KM_MCVARY:
-      iErr = GetDistribSpec (pibIn, panal, szLex);
+      iErr = GetDistribSpec(pibIn, szLex, panal);
       break;
 
     case KM_OUTPUTFILE:
       if (panal->szOutfilename)
-        EatStatement (pibIn);
+        EatStatement(pibIn);
       else
-        iErr = GetOutputFile (pibIn, szLex, panal);
+        iErr = GetOutputFile(pibIn, szLex, panal);
       break;
 
     case KM_DATA:
-      iErr = GetData (pibIn, szLex, &panal->pexpCurrent->os);
+      iErr = GetData(pibIn, szLex, &panal->pexpCurrent->os);
       break;
 
     case KM_INTEGRATE:
-      iErr = GetIntegrate (pibIn, &panal->pexpCurrent->is);
+      iErr = GetIntegrate(pibIn, szLex, &panal->pexpCurrent->is);
       break;
 
     case KM_MCMC:
-      iErr = GetMCMCSpec (pibIn, panal->pexpCurrent);
+      iErr = GetMCMCSpec(pibIn, panal->pexpCurrent);
       break;
 
     case KM_OPTDESIGN:
-      iErr = GetOptDSpec (pibIn, panal, szLex);
+      iErr = GetOptDSpec(pibIn, panal, szLex);
       break;
 
     case KM_MONTECARLO:
-      iErr = GetMonteCarloSpec (pibIn, panal, szLex);
+      iErr = GetMonteCarloSpec(pibIn, panal, szLex);
       break;
 
     case KM_SETPOINTS:
-      iErr = GetSetPointsSpec (pibIn, panal, szLex);
+      iErr = GetSetPointsSpec(pibIn, panal, szLex);
       break;
 
     case KM_SIMULATE:
-      iErr = GetSimulate ();
+      iErr = GetSimulate();
       break;
 
     case KM_STARTTIME:
-      iErr = GetStartTime (pibIn, panal->pexpCurrent);
+      iErr = GetStartTime(pibIn, panal->pexpCurrent);
       break;
 
     case KM_SIMTYPE:
-      iErr = GetSimType (pibIn);
+      iErr = GetSimType(pibIn);
       break;
 
     case KM_TEMPERATURE:
-      iErr = GetPerks (pibIn, szLex, &panal->gd);
+      iErr = GetPerks(pibIn, szLex, &panal->gd);
       break;
 
     case KM_END:
@@ -2664,7 +2802,7 @@ void ProcessWord (PINPUTBUF pibIn, PSTR szLex, PSTR szEqn)
   } /* else */
 
   if (iErr)
-    EatStatement (pibIn);
+    EatStatement(pibIn);
 
 } /* ProcessWord */
 
@@ -2683,7 +2821,7 @@ BOOL ReadAnalysis (PINPUTBUF pibIn)
   BOOL      bReturn = TRUE;
   PANALYSIS panal;
 
-  if (!pibIn) return (FALSE);
+  if (!pibIn) return(FALSE);
 
   panal = (PANALYSIS) pibIn->pInfo;
   panal->iDepth = panal->iCurrentDepth = panal->iInstances = 0;
@@ -2691,21 +2829,21 @@ BOOL ReadAnalysis (PINPUTBUF pibIn)
 
   do {
     /* State machine for parsing syntax */
-    NextLex (pibIn, szLex, &iLexType);
+    NextLex(pibIn, szLex, &iLexType);
 
     switch (iLexType) {
 
       case LX_NULL:
         if (panal->wContext != CN_GLOBAL)
-          ReportError (pibIn, RE_WARNING, NULL, "Unexpected end of file");
+          ReportError(pibIn, RE_WARNING, NULL, "Unexpected end of file");
 
         if (panal->wContext == CN_EXPERIMENT)
-          bReturn &= EndExperiment (pibIn, panal);
+          bReturn &= EndExperiment(pibIn, panal);
         panal->wContext = CN_END;
         break;
 
       case LX_IDENTIFIER:
-        ProcessWord (pibIn, szLex, szEqn);
+        ProcessWord(pibIn, szLex, szEqn);
         break;
 
       case LX_PUNCT:
@@ -2713,7 +2851,7 @@ BOOL ReadAnalysis (PINPUTBUF pibIn)
           break;
         else if (szLex[0] == CH_RBRACE) {
           if (panal->wContext & CN_EXPERIMENT) {
-            bReturn &= EndExperiment (pibIn, panal);
+            bReturn &= EndExperiment(pibIn, panal);
             break;
           }
           else {
@@ -2723,28 +2861,30 @@ BOOL ReadAnalysis (PINPUTBUF pibIn)
         }
         else
           if (szLex[0] == CH_COMMENT) {
-            SkipComment (pibIn);
+            SkipComment(pibIn);
             break;
           }
 
         /* else -- fall through! */
 
       default:
-        ReportError (pibIn, RE_UNEXPECTED, szLex, "* Ignoring");
+        ReportError(pibIn, RE_UNEXPECTED, szLex, "* Ignoring");
         break;
 
       case LX_INTEGER:
       case LX_FLOAT:
-        ReportError (pibIn, RE_UNEXPNUMBER, szLex, "* Ignoring");
+        ReportError(pibIn, RE_UNEXPNUMBER, szLex, "* Ignoring");
         break;
 
     } /* switch */
 
   } while (panal->wContext != CN_END
-           && (*pibIn->pbufCur || FillBuffer (pibIn) != EOF));
+           && (*pibIn->pbufCur || FillBuffer(pibIn) != EOF));
 
   if(panal->iCurrentDepth != 0)
-    ReportError (pibIn, RE_OPENLEVEL | RE_FATAL, "ReadAnalysis", NULL);
-  return (bReturn);
+    ReportError(pibIn, RE_OPENLEVEL | RE_FATAL, "ReadAnalysis", NULL);
+  return(bReturn);
 
 } /* ReadAnalysis */
+
+/* End */

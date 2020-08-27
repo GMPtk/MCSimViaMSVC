@@ -280,18 +280,38 @@ BOOL UpdateSpikes (PIFN pifn, PDOUBLE pdTnext, PDOUBLE pdTime)
   *pdTnext = DBL_MAX; /* If no spikes, make dTnext infinite */
   pifn->bOn = FALSE;  /* FB 9/9/97 */
   if (j < pifn->nDoses) {
-    if (*pdTime < rgT0s[j])
+    if (*pdTime < rgT0s[j]) {
       *pdTnext = rgT0s[j]; /* Time of upcoming spike */
+    }
+    else {
+      if (*pdTime == rgT0s[j]) {
+        /* At a spike, return the time of the following spike */
+        pifn->bOn = TRUE;
+        if (j + 1 < pifn->nDoses)
+          *pdTnext = rgT0s[j + 1];
+      }
+      else {
+        /* try match with next IEEE representable pdTime value */
+        double nextRepTime = nextafter(*pdTime, rgT0s[j]);
+        if (nextRepTime == rgT0s[j]) {
+          printf ("\n UpdateSpikes: Discontinuity time failed match corrected "
+                  "for floating point precision at\n"
+                  "simulation time = %.17f \n"
+                  "event time      = %.17f \n", *pdTime, rgT0s[j]);
+        
+          /* return the time of the following spike */
+          pifn->bOn = TRUE;
+          if (j + 1 < pifn->nDoses)
+            *pdTnext = rgT0s[j + 1];
+        }
+        else { /* Oops */
+          printf ("\n UpdateSpikes: Discontinuity was passed over at\n"
+                  "simulation time = %.17f \n"
+                  "event time      = %.17f \n", *pdTime, rgT0s[j]);
+        }
+      }
+    } /* else */
 
-    else if (*pdTime == rgT0s[j] || nextafter(*pdTime, rgT0s[j]) == rgT0s[j]) {
-      /* At a spike, return the time of the following spike */
-      pifn->bOn = TRUE;
-      if (j + 1 < pifn->nDoses)
-        *pdTnext = rgT0s[j + 1];
-    } /* else if */
-
-    else /* Oops */
-      printf ("\nUpdateSpikes: Discontinuity was passed over\n");
   } /* if */
 
   return (pifn->bOn);

@@ -70,18 +70,18 @@ double **pdVar  = NULL;
 double CalcDelay (HVAR hvar, double dTime, double delay)
 {
   int i;
-  int sentinel; // stopping flag for circular array
+  int sentinel; /* stopping flag for circular array */
   double dTmp, oldTime;
 
-  // printf("\n\n in CalcDelay, time = %g", dTime);
+  /* printf("\n\n in CalcDelay, time = %g", dTime); */
 
   /* if the handle has not been seen, create the storage for that variable.
      We should check that it's a state or output variable... */
   if (!rgiVars[hvar]) {
-    // printf("\n => creating past array for variable %ld...\n", hvar);
+    /* printf("\n => creating past array for variable %ld...\n", hvar); */
     pdVar[hvar] = InitdVector(MAX_DELAY);
     pdVar[hvar][0] = vrgModelVars[hvar];
-    rgiVars[hvar] = 1; // mark as initialized
+    rgiVars[hvar] = 1; /* mark as initialized */
   }
 
   /* negative or null delays are forbidden */
@@ -89,18 +89,18 @@ double CalcDelay (HVAR hvar, double dTime, double delay)
   if (delay <= 0) {
     printf ("\nError: negative or null delays aren't allowed - Exiting.\n");
     exit(0);
-    // for null delays the variable's current value could be returned though...
+    /* for null delays the variable's current value could be returned... */
   }
-  else { // delay strictly positive, OK
+  else { /* delay strictly positive, OK */
 
-    // printf("\n back time: %e - %e = %e\n", dTime, delay, dTime - delay);
+    /* printf("\n back time: %e - %e = %e\n", dTime, delay, dTime - delay); */
 
     oldTime = dTime - delay;
     if (oldTime <= dInitialTime) {
-      // printf("\n default var %ld at val %g\n", hvar, pdVar[hvar][0]);
+      /* printf("\n default var %ld at val %g\n", hvar, pdVar[hvar][0]); */
       return (pdVar[hvar][0]);
     } 
-    else { // past time sought is after initial time
+    else { /* past time sought is after initial time */
 
       /* find the index of time (dTime - delay). 
          The current time is stored in rgdTime[iCurrentTime].
@@ -113,14 +113,14 @@ double CalcDelay (HVAR hvar, double dTime, double delay)
         i = i - 1;
         if (i < 0)
           i = MAX_DELAY - 1;
-          sentinel = sentinel + 1;
-          // printf("\n sentinel: %d\n", sentinel);
-          if (sentinel > MAX_DELAY - 1) {
-            printf ("Error: size MAX_DELAY of rgdTime array = "
-                    "%ld too small.\n", (long) MAX_DELAY);
-            exit(0);
-          }
-      } // end while
+        sentinel = sentinel + 1;
+        /* printf("\n sentinel: %d\n", sentinel); */
+        if (sentinel > MAX_DELAY - 1) {
+          printf ("Error: size MAX_DELAY of rgdTime array = "
+                  "%ld too small.\n", (long) MAX_DELAY);
+          exit(0);
+        }
+      } /* end while */
  
       /* compute delayed term */
       if (i == (iCurrentTime - 1)) { 
@@ -139,7 +139,7 @@ double CalcDelay (HVAR hvar, double dTime, double delay)
                 (oldTime - rgdTime[i]) / (rgdTime[i+1] - rgdTime[i]));
       }  
 
-      // printf("\n computed var %ld at val %g\n", hvar, dTmp);
+      /* printf("\n computed var %ld at val %g\n", hvar, dTmp); */
     }
   
     return dTmp;
@@ -159,20 +159,20 @@ void InitDelays (double dTime)
 {
   int i;
 
-  // printf("\n\n in InitDelays");
+  /* printf("\n\n in InitDelays"); */
 
-  // initialize the time storage
+  /* initialize the time storage */
   if (!rgdTime) {
     rgdTime = InitdVector(MAX_DELAY);
     iCurrentTime = -1;
     dInitialTime = dTime;
-    // printf("\n => past time array created.");
+    /* printf("\n => past time array created."); */
   }
       
-  // initialize a table of the delayed variables 
-  // note that the storage vectors pdVar[x] will be init in CalcDelay
-  // upon first call to that function for a given x (state or output)
-  // That is messy and should be handled by the model generator
+  /* initialize a table of the delayed variables
+     note that the storage vectors pdVar[x] will be init in CalcDelay
+     upon first call to that function for a given x (state or output)
+     That is messy and should be handled by the model generator */
   if (!rgiVars) {
     rgiVars = InitlVector(GetNModelVars());
     pdVar   = InitpdVector(GetNModelVars());
@@ -193,7 +193,7 @@ void StoreDelayed (double t)
 {
   int i;
 
-  // printf("\n\n in StoreDelayed, time %g\n", t);
+  /* printf("\n\n in StoreDelayed, time %g\n", t); */
 
   iCurrentTime++;
   if (iCurrentTime == MAX_DELAY) /* loop */
@@ -204,7 +204,7 @@ void StoreDelayed (double t)
   for (i = 0; i < GetNModelVars(); i++)
     if (rgiVars[i]) {
       pdVar[i][iCurrentTime] = vrgModelVars[i];
-      // printf(" stored var %d, val %g\n", i, vrgModelVars[i]);
+      /* printf(" stored var %d, val %g\n", i, vrgModelVars[i]); */
     }
 
 } /* StoreDelayed */

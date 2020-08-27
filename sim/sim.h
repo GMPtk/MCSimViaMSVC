@@ -2,7 +2,7 @@
 
    Originally written by Don Maszle
 
-   Copyright (c) 1993-2018. Free Software Foundation, Inc.
+   Copyright (c) 1993-2020. Free Software Foundation, Inc.
 
    This file is part of GNU MCSim.
 
@@ -42,8 +42,8 @@
 */
 
 /* Version and copyright */
-#define VSZ_VERSION "v6.1.0"
-#define VSZ_COPYRIGHT "Copyright (c) 1993-2019 Free Software Foundation, Inc."
+#define VSZ_VERSION "v6.2.0"
+#define VSZ_COPYRIGHT "Copyright (c) 1993-2020 Free Software Foundation, Inc."
 
 /* These are potential array size problems.
    Other maximum sizes are MAX_EQN and MAX_LEX in lex.h */
@@ -115,6 +115,7 @@
 #define KM_NORMALCV        235
 #define KM_TRUNCNORMALCV   236
 #define KM_USERLL          237
+#define KM_NEGATIVEBINOM   238
 
 #define KM_PREDICTION      300
 
@@ -179,6 +180,7 @@
 #define MCV_NORMALCV        25
 #define MCV_TRUNCNORMALCV   26
 #define MCV_USERLL          27
+#define MCV_NEGATIVEBINOM   28
 
 /* Integration Method types */
 
@@ -195,6 +197,11 @@
 #define RTOL_DEFAULT    (1.0e-5)
 #define ATOL_DEFAULT    (1.0e-7)
 #define IMF_DEFAULT     (222) /* stiff */
+#define MXSTEPS_DEFAULT (500)
+#define MAXNEF_DEFAULT  (7)
+#define MAXCOR_DEFAULT  (3)
+#define MAXNCF_DEFAULT  (10)
+#define NLSCOEF_DEFAULT (0.1)
 #define TSTEP_DEFAULT   (1)
 
 /* Simulation specification defaults */
@@ -235,11 +242,14 @@ typedef struct tagVARMODIFICATION {
 
 typedef struct tagINTSPEC {
   int     iAlgo;          /* one of IM_ types */
+
+  double  dRtol;          /* relative error tolerance */
+  double  dAtol;          /* absolute error tolerance */
+
+  /* Lsodes specifics */ 
   long    iopt;           /* optional inputs flag */
   long    itask;          /* type of work */
   long    itol;           /* type of error checking */
-  double  dRtol;          /* relative error tolerance */
-  double  dAtol;          /* aboslute error tolerance */
   long    iMf;            /* 0: nonstiff; 1: stiff; 2: stiff, jac supplied */
   long    iDSFlag;        /* lsodes return flag */
   long    liw;            /* length of iwork array */
@@ -247,7 +257,16 @@ typedef struct tagINTSPEC {
   PLONG   iwork;          /* working array pointer */
   PDOUBLE rwork;          /* working array pointer */
 
+  /* Cvodes specifics */
+  int    maxsteps;        /* Maximum number of internal steps before t_out */
+  int    maxnef;          /* Maximum number of error test failures */
+  int    maxcor;          /* Maximum number of nonlinear iterations */
+  int    maxncf;          /* Maximum number of convergence failures */
+  double nlscoef;         /* Coefficient in the nonlinear convergence test */
+  
+  /* Euler specifics */
   double  dTStep;         /* time step for Euler */
+
 } INTSPEC, *PINTSPEC; /* tagINTSPEC */
 
 
@@ -524,7 +543,7 @@ extern PSTRLEX vrgszlexArgs[];
    Prototypes
 */
 
-void AnnounceProgram(void);
+void AnnounceProgram(int iRank);
 void CorrectInputToTransition(PEXPERIMENT, PDOUBLE);
 int  DoOneExperiment(PEXPERIMENT pexp);
 void DoAnalysis(PANALYSIS panal);
@@ -541,7 +560,6 @@ int  MCVarListToArray(PVOID pv_pMCVar, PVOID pv_Null);
 int  ModifyOneParm(PVOID pData, PVOID pNullInfo);
 void ModifyParms(PLIST plistParmMods);
 void PrepAnalysis(PANALYSIS panal);
-int  ProcessMonteCarlo(PINPUTBUF, PANALYSIS, PSTR, int);
 void PromptFilenames(PSTR *pszFileIn, PSTR *pszFileOut);
 void WriteArray(FILE *pfile, long cElems, double *rg);
 void WriteArrayLog(FILE *pfile, long cElems, double *rg);

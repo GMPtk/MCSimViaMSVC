@@ -187,10 +187,10 @@ void CollectConvInfo (PLEVEL plevel, char **args)
   for (i = 0; i < plevel->nMCVars; i++) {
     pMCVar = plevel->rgpMCVars[i];
     **mean_dest = pMCVar->dVal_mean;
- // Keep in mind that the running variance calculation is an
- // intermediate value and we want to communicate the variance here
- // That means that we need to do the final step before sending
- // sigma^2 = v_k / (k-1)
+    /* Keep in mind that the running variance calculation is an
+       intermediate value and we want to communicate the variance here
+       That means that we need to do the final step before sending
+       sigma^2 = v_k / (k-1) */
     **var_dest = pMCVar->dVal_var/(*n-1);
     (*mean_dest)++;
     (*var_dest)++;
@@ -1024,7 +1024,7 @@ void DoMarkov (PANALYSIS panal)
 
     /* Adjust the update time, eventually */
     if (iter == nUpdateAt) {
-      nTotal = nTotal * 3 / 2;
+      nTotal = (nTotal * 3) / 2;
       nUpdateAt = iter + nTotal;
     }
 
@@ -1518,6 +1518,31 @@ double LnDensity (PMCVAR pMCVar, PANALYSIS panal)
       else
         return dTmp + (dParm2 - dTheta) * log(1 - dParm1);
 
+    case MCV_NEGATIVEBINOM:
+      /* dParm1: r, number of runs before success, 
+         dParm2: p, probability of success */
+      if ((dParm2 < 0) || (dParm2 > 1)) {
+        printf("Error: bad p for negative binomial variate in LnDensity\n");
+        exit (0);
+      }
+      /* log binomial coefficient ((x + r - 1)! / (x!(r - 1)!) */
+      dTmp = lnGamma (dTheta + dParm1) - lnGamma (dTheta + 1) -
+             lnGamma (dParm1);
+
+      if ((dParm2 == 0) && (dTheta != 0))
+        return (NULL_SUPPORT); /* should be -INF */
+      else
+        dTmp = dTmp + dTheta * log(dParm2);
+
+      if (dParm2 == 1) {
+        if (dParm1 == 0)
+          return dTmp; /* because log(0^0) is 0 */
+        else
+          return (NULL_SUPPORT); /* should be -INF */
+      }
+      else
+        return (dTmp + dParm1 * log(1 - dParm2));
+
     case MCV_PIECEWISE:
       density = 2 / (dMax + dParm2 - dParm1 - dMin);
 
@@ -1624,7 +1649,8 @@ double LnDensity (PMCVAR pMCVar, PANALYSIS panal)
       /* Normal log-density minus log-jacobian */
       return lnDFNormal( dTmp4, dTmp3, dTmp ) - 0.5*log(pow(dTmp4,2) + dTmp2);
 
-  case MCV_STUDENTT: /* Student t, dParm1 is dof, dParm2 is m, dMin is sigma */
+    case MCV_STUDENTT: /* Student t, 
+                          dParm1 is dof, dParm2 is m, dMin is sigma */
       if (dParm1 <= 0) {
         printf("Error: bad dof for Student-T variate"
                "in LnDensity\n");
@@ -1856,7 +1882,7 @@ void RunTemperingBlock (PANALYSIS panal, long lRunLength, PLONG iter)
 
     /* Adjust the update time eventually */
     if (i == nUpdateAt) {
-      nTotal = nTotal * 3 / 2;
+      nTotal = (nTotal * 3) / 2;
       nUpdateAt = i + nTotal;
     }
 
@@ -2859,13 +2885,13 @@ void SampleThetas (PLEVEL plevel, char **args)
               pMCVar->dKernelSD = pMCVar->dKernelSD * 20;
           }
           else
-            pMCVar->dKernelSD = DBL_MAX;
+            pMCVar->dKernelSD = pMCVar->dMaxKernelSD;
         }
         else { /* more normal case */
           if (pMCVar->dKernelSD < DBL_MAX / 2)
             pMCVar->dKernelSD = pMCVar->dKernelSD * 2;
           else
-            pMCVar->dKernelSD = DBL_MAX;
+            pMCVar->dKernelSD = pMCVar->dMaxKernelSD;
         }
 
         /* check that kernel SD does not increase wildly */
@@ -3395,15 +3421,18 @@ void SetKernel (PLEVEL plevel, char **args)
       pMCVar = plevel->rgpMCVars[n];
       CalculateOneMCParm (pMCVar);
 
-      /* set the maximum kernel SD value */
+      /* set the maximum kernel SD value to about half of the SD of a 
+         uniform distribution having the same range */
       if (pMCVar->iType == MCV_UNIFORM || pMCVar->iType == MCV_LOGUNIFORM )
-        pMCVar->dMaxKernelSD = (*(pMCVar->pdParm[1]) - *(pMCVar->pdParm[0])) /
-                               6.0;
+        pMCVar->dMaxKernelSD = (*(pMCVar->pdParm[1]) / 6.0) -
+                               (*(pMCVar->pdParm[0]) / 6.0);
       else
-        pMCVar->dMaxKernelSD = (*(pMCVar->pdParm[3]) - *(pMCVar->pdParm[2])) /
-                               6.0;
+        pMCVar->dMaxKernelSD = (*(pMCVar->pdParm[3]) / 6.0) -
+                               (*(pMCVar->pdParm[2]) / 6.0);
 
-      /* sample 4 variates */
+      /* we want a kernel SD compatible with the SD of the prior; this could
+         be done analytically, depending on the prior. We approximate it by
+         sampling 4 variates from the prior */
       dMin = dMax = pMCVar->dVal;
       for (m = 0; m < 3; m++) {
         CalculateOneMCParm(pMCVar);
@@ -3412,9 +3441,9 @@ void SetKernel (PLEVEL plevel, char **args)
         else if (dMax < dTmp) dMax = dTmp;
       }
 
-      /* set the range safely */
+      /* set the range safely because max - min could be too large */
       if ((*(pMCVar->pdParm[2]) == -DBL_MAX) ||
-          (*(pMCVar->pdParm[3]) == DBL_MAX))
+          (*(pMCVar->pdParm[3]) ==  DBL_MAX))
         pMCVar->dKernelSD = (0.5 * dMax) - (0.5 * dMin);
       else
         pMCVar->dKernelSD = dMax - dMin;
@@ -3422,6 +3451,11 @@ void SetKernel (PLEVEL plevel, char **args)
       /* take care of the case in which the range is zero
          (can happens for discrete variables) */
       if (pMCVar->dKernelSD == 0) {
+        pMCVar->dKernelSD = pMCVar->dMaxKernelSD;
+      }
+
+      /* check that we do not exceed the maximum SD */
+      if (pMCVar->dKernelSD > pMCVar->dMaxKernelSD) {
         pMCVar->dKernelSD = pMCVar->dMaxKernelSD;
       }
     }

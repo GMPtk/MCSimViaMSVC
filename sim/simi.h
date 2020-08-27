@@ -49,14 +49,14 @@ int  FreePrintRec (PVOID pData, PVOID pUserInfo);
 void FreeOneLevel (PLEVEL plevel);
 BOOL GetData (PINPUTBUF pibIn, PSTR szLex, POUTSPEC pos);
 BOOL GetMCMCSpec (PINPUTBUF pibIn, PEXPERIMENT pexp);
-BOOL GetIntegrate (PINPUTBUF pibIn, PINTSPEC pis);
+BOOL GetIntegrate (PINPUTBUF pibIn, PSTR szLex, PINTSPEC pis);
 PSTR GetKeyword (int iKWCode);
 int  GetKeywordCode (PSTR szKeyword, PINT pfContext);
 BOOL GetListOfData (PINPUTBUF pibIn, PDATAREC pda, PSTR szLex);
 BOOL GetListOfTimes (PINPUTBUF pibIn, int nRecs, PPRINTREC *ppr, PSTR szLex);
 int  GetDistribParam(PINPUTBUF pibIn, PSTR szLex,
                      PLIST plist, int n, PMCVAR pmcvar);
-int  GetDistribSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex);
+int  GetDistribSpec (PINPUTBUF pibIn, PSTR szLex, PANALYSIS panal);
 int  GetMonteCarloSpec (PINPUTBUF pibIn, PANALYSIS panal, PSTR szLex);
 BOOL GetOptDSpec (PINPUTBUF pibIn, PANALYSIS  panal, PSTR szLex);
 BOOL GetOutputFile (PINPUTBUF pibIn, PSTR szLex, PANALYSIS panal);

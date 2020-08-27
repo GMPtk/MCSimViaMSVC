@@ -77,7 +77,6 @@ PSTR vrgszLexTypes[] = {
    "backing up" the EOB pointer and adjusting the file pointer
    to just after a carriage return.
 */
-
 void PreventLexSplit (PINPUTBUF pibIn, int iOffset)
 {
   long lDelta;
@@ -108,7 +107,6 @@ void PreventLexSplit (PINPUTBUF pibIn, int iOffset)
 
    Return 0 on error, non-zero on success or EOF if at end of file.
 */
-
 int FillBuffer (PINPUTBUF pibIn)
 {
   int iReturn = 0;
@@ -143,7 +141,6 @@ int FillBuffer (PINPUTBUF pibIn)
 
    Returns 0 on error, non-zero on success.
 */
-
 BOOL InitBuffer (PINPUTBUF pibIn, PSTR szFullPathname)
 {
   BOOL bReturn = 0;
@@ -176,7 +173,6 @@ BOOL InitBuffer (PINPUTBUF pibIn, PSTR szFullPathname)
 
    Makes a string buffer from a string.
 */
-
 void MakeStringBuffer (PINPUTBUF pBuf, PINPUTBUF pbufStr, PSTR sz)
 {
   pbufStr->pfileIn = NULL;        /* Flags that is not file buffer */
@@ -209,7 +205,6 @@ void FlushBuffer (PINPUTBUF pibIn)
    Skips over whitespace of input buffer.  Returns non-zero if something
    has been skipped.
 */
-
 int SkipWhitespace (PINPUTBUF pibIn)
 {
   char c;
@@ -253,7 +248,6 @@ int SkipWhitespace (PINPUTBUF pibIn)
    [i-j]: bounds returned are i to j+1
    where i and j are long integers
 */
-
 void GetArrayBounds (PINPUTBUF pibIn, PLONG piLB, PLONG piUB)
 {
   PSTRLEX szTmp;
@@ -298,7 +292,6 @@ void GetArrayBounds (PINPUTBUF pibIn, PLONG piLB, PLONG piUB)
 
    Copies the quoted string from buffer to szLex.
 */
-
 void GetaString (PINPUTBUF pibIn, PSTR szLex)
 {
   int i = 0;
@@ -332,7 +325,6 @@ void GetaString (PINPUTBUF pibIn, PSTR szLex)
    letter or '_' and is followed by alphanumerics or '_'.  MAX_LEX is
    the length of the longest permitable id.
 */
-
 void GetIdentifier (PINPUTBUF pibIn, PSTR szLex)
 {
   int i = 0;
@@ -374,7 +366,6 @@ void GetIdentifier (PINPUTBUF pibIn, PSTR szLex)
    parsing the number:
            ddd1 [[.[ddd2]] [E[+]ddd3]]
 */
-
 void GetNumber (PINPUTBUF pibIn, PSTR szLex, PINT piLexType)
 {
   int i = 0;
@@ -476,7 +467,6 @@ void GetNumber (PINPUTBUF pibIn, PSTR szLex, PINT piLexType)
    Skips over leading whitespace and copies the next lexical element
    into szLex.
 */
-
 void NextLex (PINPUTBUF pibIn, PSTRLEX szLex, PINT piLexType)
 {
   char c;
@@ -537,7 +527,6 @@ void NextLex (PINPUTBUF pibIn, PSTRLEX szLex, PINT piLexType)
    Sames as NextLex but looks for iType.  Reports errors.  Returns
    0 if ok, non-zero if error.
 */
-
 BOOL ENextLex (PINPUTBUF pibIn, PSTRLEX szLex, int iType)
 {
   int iLex, iErr;
@@ -558,7 +547,6 @@ BOOL ENextLex (PINPUTBUF pibIn, PSTRLEX szLex, int iType)
    Skips over the comment in the input buffer, the leading delimiter
    of which has already been stripped.
 */
-
 void SkipComment (PINPUTBUF pibIn)
 {
   if (!pibIn)
@@ -586,7 +574,6 @@ void SkipComment (PINPUTBUF pibIn)
    Returns the next character in the input buffer without advancing
    over it.
 */
-
 char NextChar (PINPUTBUF pibIn)
 {
   if (!pibIn
@@ -608,7 +595,6 @@ char NextChar (PINPUTBUF pibIn)
 
    e.g. 'x 5;'  -or-  'x = 5;'
 */
-
 int GetOptPunct (PINPUTBUF pibIn, PSTR szLex, char chPunct)
 {
   int iReturn, iType;
@@ -629,7 +615,6 @@ int GetOptPunct (PINPUTBUF pibIn, PSTR szLex, char chPunct)
    Tries to get the given punctuation from the input buffer.
    Returns TRUE if the next lexical item was the chPunct, else FALSE .
 */
-
 int GetPunct (PINPUTBUF pibIn, PSTR szLex, char chPunct)
 {
   int iType;
@@ -647,7 +632,6 @@ int GetPunct (PINPUTBUF pibIn, PSTR szLex, char chPunct)
    Returns 0 if next lexical item was the chPunct, non-zero if error.
    Reports Errors.
 */
-
 int EGetPunct (PINPUTBUF pibIn, PSTR szLex, char chPunct)
 {
   int iReturn;
@@ -668,7 +652,6 @@ int EGetPunct (PINPUTBUF pibIn, PSTR szLex, char chPunct)
 
    Eats buffer to the statement terminator.
 */
-
 void EatStatement (PINPUTBUF pib)
 {
   char c;
@@ -696,7 +679,6 @@ void EatStatement (PINPUTBUF pib)
 
    The buffer szStmt is assumed to be of type PSTREQN of size MAX_EQN.
 */
-
 void GetStatement (PINPUTBUF pibIn, PSTR szStmt)
 {
   int i, fDone = 0;
@@ -748,7 +730,6 @@ void GetStatement (PINPUTBUF pibIn, PSTR szStmt)
 
    Will not eat list terminator.
 */
-
 int NextListItem (PINPUTBUF pibIn, PSTR szLex,
                   int bIdTypes, int fItemNum, char cListTerm)
 {
@@ -773,16 +754,15 @@ int NextListItem (PINPUTBUF pibIn, PSTR szLex,
 /* -----------------------------------------------------------------------------
    GetFuncArgs
 
-   Gets nArgs arguments to a "function" from pibIn.  The argument
+   Gets nArgs arguments to a "function" from pibIn. The argument
    list must be in parentheses.
 
    rgiArgTypes[] is a profile specifying which type each argument must be.
    rgszArgs[] is an array of PSTRLEX buffers to hold the arguments.
 
-   Returns TRUE on success, FALSE on an error.  Errors are reported,
+   Returns TRUE on success, FALSE on an error. Errors are reported,
    but the statement is not flushed.
 */
-
 BOOL GetFuncArgs (PINPUTBUF pibIn,
                   int nArgs, int rgiArgTypes[], PSTR szArgs)
 {
@@ -833,7 +813,6 @@ BOOL GetFuncArgs (PINPUTBUF pibIn,
    y[1 + 1] -> y_2
    y[i * 2] -> y_4 if index = 2
 */
-
 void UnrollEquation (PINPUTBUF pibIn, long index, PSTR szEqn, PSTR szEqnU)
 {
   int j = 0, k = 0, m;

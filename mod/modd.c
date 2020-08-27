@@ -52,10 +52,10 @@ PSTR vrgszMathFuncs[] = {
 
   /* random sampling related routines defined in random.c */
   "BetaRandom", "BinomialBetaRandom", "BinomialRandom", "CauchyRandom", 
-  "Chi2Random", 
-  "ExpRandom", "GammaRandom", "GetSeed", "GGammaRandom", "InvGGammaRandom", 
-  "LogNormalRandom", "LogUniformRandom", "NormalRandom", "PiecewiseRandom",
-  "PoissonRandom", "SetSeed", "StudentTRandom", "TruncInvGGammaRandom", 
+  "Chi2Random", "ExpRandom", "GammaRandom", "GetSeed", "GGammaRandom",
+  "InvGGammaRandom", "LogNormalRandom", "LogUniformRandom",
+  "NegativeBinomialRandom", "NormalRandom", "PiecewiseRandom",
+  "PoissonRandom", "SetSeed", "StudentTRandom", "TruncInvGGammaRandom",
   "TruncLogNormalRandom", "TruncNormalRandom", "UniformRandom",
 
   /* End flag */

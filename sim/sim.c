@@ -80,7 +80,7 @@ static int check_flag(void *flagvalue, char *funcname, int opt)
   /* Check if SUNDIALS function returned NULL pointer - no memory allocated */
 
   if (opt == 0 && flagvalue == NULL) {
-    fprintf(stderr, "\nSUNDIALS_ERROR: %s() failed - returned NULL pointer\n\n",
+    fprintf(stderr, "[SUNDIALS ERROR] %s() failed - returned NULL pointer\n\n",
             funcname);
     return(1); }
 
@@ -89,14 +89,14 @@ static int check_flag(void *flagvalue, char *funcname, int opt)
   else if (opt == 1) {
     errflag = (int *) flagvalue;
     if (*errflag < 0) {
-      fprintf(stderr, "\nSUNDIALS_ERROR: %s() failed with flag = %d\n\n",
+      fprintf(stderr, "[SUNDIALS ERROR] %s() failed with flag = %d\n\n",
               funcname, *errflag);
       return(1); }}
 
   /* Check if function returned NULL pointer - no memory allocated */
 
   else if (opt == 2 && flagvalue == NULL) {
-    fprintf(stderr, "\nMEMORY_ERROR: %s() failed - returned NULL pointer\n\n",
+    fprintf(stderr, "[MEMORY ERROR] %s() failed - returned NULL pointer\n\n",
             funcname);
     return(1); }
 
@@ -117,21 +117,21 @@ static int f_for_cvodes(realtype t, N_Vector u, N_Vector udot, void *user_data)
 
   /* problem with the output variables, derivatives have the proper length
      and do not need to be translated */
-  if (rgMVars == NULL) { // initialize
+  if (rgMVars == NULL) { /* initialize */
 
     nStates = NV_LENGTH_S(udot);
 
     /* Extract number of outputs from user_data */
     nVars = ((UserData *) user_data)->nVars;
 
-    // state and output vector
+    /* state and output vector */
     rgMVars = (realtype *) malloc(nVars * sizeof(realtype));
 
     if (/*!dudata ||*/ !rgMVars)
       ReportError (NULL, RE_OUTOFMEM | RE_FATAL, "f_for_cvodes", NULL);
   }
 
-  // copy u to rgMVars start
+  /* copy u to rgMVars start */
   for (i = 0; i < nStates; i++) {
     rgMVars[i] = NV_Ith_S(u, i);
   }
@@ -298,7 +298,7 @@ int DoOneExperiment (PEXPERIMENT pexp)
   PINTSPEC   pis;   /* pointer to the integrator specs */
 
 #ifdef HAVE_LIBSUNDIALS_CVODES
-  // CVODES specific variables
+  /* CVODES specific variables */
   static N_Vector u = NULL;
   static UserData user_data;
   static void *cvode_mem = NULL;
@@ -336,7 +336,7 @@ int DoOneExperiment (PEXPERIMENT pexp)
 
   pexp->dTime = pexp->dT0;
 
-  // integrator initializations
+  /* integrator initializations */
   if (pis->iAlgo == IAL_LSODES) { /* Lsodes algorithm */
     /* set lsodes return flag to 1 for first call */
     pis->iDSFlag = 1;
@@ -348,12 +348,12 @@ int DoOneExperiment (PEXPERIMENT pexp)
 
       if (1 || u == NULL) { /* always done for now */
 
-        /* Create a serial vector for state variables */
+        /* create a serial vector for state variables */
         u = N_VNew_Serial(pmod->nStates);  /* Allocate u vector */
         if (check_flag((void*)u, "N_VNew_Serial", 0)) return(1);
 
-        /* Call CVodeCreate to create the solver memory and specify the
-         * Backward Differentiation Formula and the use of a Newton iteration */
+        /* call CVodeCreate to create the solver memory and specify the
+           Backward Differentiation Formula and the use of a Newton iteration */
         cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
         if (check_flag((void *)cvode_mem, "CVodeCreate", 0)) return(1);
 
@@ -361,29 +361,48 @@ int DoOneExperiment (PEXPERIMENT pexp)
         for (i = 0; i < pmod->nStates; i++)
           NV_Ith_S(u, i) = pmod->pdModelVars[i];
 
-        /* Call CVodeInit to initialize the integrator memory and specify the
-         * user's right hand side function in u'=f(t,u), the inital time T0, and
-         * the initial dependent variable vector u. */
+        /* initialize the integrator memory and specify the
+           user's right hand side function in u'=f(t,u), the inital time T0,
+           and the initial dependent variable vector u. */
         flag = CVodeInit(cvode_mem, f_for_cvodes, pexp->hT0, u);
         if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
-        /* Call CVodeSStolerances to specify the scalar relative tolerance
-         * and scalar absolute tolerance */
+        /* set the scalar relative tolerance and scalar absolute tolerance */
         flag = CVodeSStolerances(cvode_mem,
                                  RCONST(pis->dRtol), RCONST(pis->dAtol));
         if (check_flag(&flag, "CVodeSStolerances", 1)) return(1);
 
-        /* Set the pointer to user-defined data used to store the total
+        /* set the pointer to user-defined data used to store the total
            number of state and output variables */
         user_data.nVars = pmod->nModelVars;
         flag = CVodeSetUserData(cvode_mem, &user_data);
         if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
 
-        /* Call CVDense to specify the CVDENSE dense linear solver */
+        /* set the maximum number of internal steps before t_out */
+        flag = CVodeSetMaxNumSteps(cvode_mem, pis->maxsteps);
+        if (check_flag(&flag, "CVodeSetMaxNumSteps", 1)) return(1);
+
+        /* set the maximum number of error test failures */
+        flag = CVodeSetMaxErrTestFails(cvode_mem, pis->maxnef);
+        if (check_flag(&flag, "CVodeSetMaxErrTestFails", 1)) return(1);
+
+        /* set the maximum number of nonlinear iterations */
+        flag = CVodeSetMaxNonlinIters(cvode_mem, pis->maxcor);
+        if (check_flag(&flag, "CVodeSetMaxNonlinIters", 1)) return(1);
+
+        /* set the maximum number of convergence failures */
+        flag = CVodeSetMaxConvFails(cvode_mem, pis->maxncf);
+        if (check_flag(&flag, "CVodeSetMaxConvFails", 1)) return(1);
+
+        /* set the oefficient in the nonlinear convergence test */
+        flag = CVodeSetNonlinConvCoef(cvode_mem, RCONST(pis->nlscoef));
+        if (check_flag(&flag, "CVodeSetNonlinConvCoef", 1)) return(1);
+        
+        /* call CVDense to specify the CVDENSE dense linear solver */
         flag = CVDense(cvode_mem, pmod->nStates);
         if (check_flag(&flag, "CVDense", 1)) return(1);
 
-        /* Set the user-supplied Jacobian routine Jac, not used now
+        /* set the user-supplied Jacobian routine Jac, not used now
         flag = CVDlsSetBandJacFn(cvode_mem, Jac);
         if(check_flag(&flag, "CVDlsSetBandJacFn", 1)) return(1); */
 
@@ -444,9 +463,13 @@ int DoOneExperiment (PEXPERIMENT pexp)
 	  if (dTup > (pexp)->dTime) {
 	    /* do not overshoot */
             flag = CVodeSetStopTime(cvode_mem, (realtype) dTup);
-            flag = CVode(cvode_mem, dTup, u, &(pexp)->dTime, CV_NORMAL);
-            if (check_flag(&flag, "CVode", 1))
-              break;
+            flag = CVode(cvode_mem, (realtype) dTup, u, &(pexp)->dTime,
+                         CV_NORMAL);
+            if (check_flag(&flag, "CVode", 1)) {
+              /* we cannot guarantee the accuracy of the results, exit routine
+                 with an error flag */
+              return (0);
+            }
             /* copy back state values */
             for (i = 0; i < pmod->nStates; i++) {
 	      pmod->pdModelVars[i] = NV_Ith_S(u, i);
@@ -516,17 +539,15 @@ int DoOneExperiment (PEXPERIMENT pexp)
 */
 int DoOneNormalExp (PANALYSIS panal, PEXPERIMENT pexp)
 {
-  printf (" %d", pexp->iExp); /* Show what experiment it is */
+  printf("experiment %d\n", pexp->iExp); /* Show what experiment it is */
 
-  InitModel ();
-  ModifyParms (panal->expGlobal.plistParmMods); /* Global modifications */
-  ModifyParms (pexp->plistParmMods); /* Mods for this experiment */
-  if (!DoOneExperiment (pexp)) {
+  InitModel();
+  ModifyParms(panal->expGlobal.plistParmMods); /* Global modifications */
+  ModifyParms(pexp->plistParmMods); /* Mods for this experiment */
+  if (!DoOneExperiment(pexp)) {
     /* Error */
     return 0;
   }
-
-  printf ("\n");
 
   return (1);
 
@@ -599,7 +620,7 @@ void DoNormal (PANALYSIS panal)
       WriteNormalOutput (panal, panal->rgpExps[i]);
     }
     else
-      printf ("Warning: Integration failed - No output generated\n");
+      printf("[MCSIM ERROR] Integration failed - No output generated\n\n");
   }
 
 } /* DoNormal */
@@ -1091,7 +1112,8 @@ void GetCmdLineArgs (int cArg, char *const *rgszArg, PSTR *pszFileIn,
           panal->bOutputIter = TRUE;
         }
         else {
-          printf(">> An integer print step must follow -i\nExiting.\n\n");
+          printf(">> Error: An integer print step must "
+                 "follow -i\nExiting.\n\n");
           exit(-1);
         }
         break;
@@ -1139,18 +1161,26 @@ void GetCmdLineArgs (int cArg, char *const *rgszArg, PSTR *pszFileIn,
 
 /* ----------------------------------------------------------------------------
 */
-void AnnounceProgram (void)
+void AnnounceProgram (int iRank)
 {
-  printf ("\n________________________________________\n");
-  printf ("\nMCSim " VSZ_VERSION "\n\n");
-  printf (VSZ_COPYRIGHT "\n\n");
+  if (iRank == 0) { /* serial */
+    printf ("\n________________________________________\n");
+    printf ("\nMCSim " VSZ_VERSION "\n\n");
+    printf (VSZ_COPYRIGHT "\n\n");
 
-  printf ("MCSim comes with ABSOLUTELY NO WARRANTY;\n"
-          "This is free software, and you are welcome to redistribute it\n"
-          "under certain conditions; see the GNU General Public License.\n\n");
+    printf ("MCSim comes with ABSOLUTELY NO WARRANTY;\n"
+            "This is free software, and you are welcome to redistribute it\n"
+            "under certain conditions; "
+            "see the GNU General Public License.\n\n");
 
-  printf ("* Using `%s' model in file \"%s\" created by %s\n\n",
-          szModelDescFilename, szModelSourceFilename, szModelGenAndVersion);
+#ifdef HAVE_LIBGSL
+    printf ("* Using GNU Scientific Library (GSL)\n\n");
+#endif
+
+    printf ("* Using `%s' model in file \"%s\" created by %s\n\n",
+            szModelDescFilename, szModelSourceFilename, szModelGenAndVersion);
+
+  } /* end if iRank == 0 */
 
 } /* AnnounceProgram */
 
@@ -1182,8 +1212,7 @@ int main (int nArg, char **rgszArg)
   panal->rank = rank;
   panal->size = size;
 
-  if (panal->rank == 0)
-    AnnounceProgram ();
+  AnnounceProgram(panal->rank);
 
   if (!panal)
     ReportError (NULL, RE_OUTOFMEM | RE_FATAL,

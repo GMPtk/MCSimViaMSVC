@@ -150,6 +150,4 @@ int stode_(long *, double *, double *, long *, double *, double *,
 
 double vnorm_(long *, double *, double *);
 
-int xerrwv (char *, long, long, long, long, long, double, double);
-
 /* end */

@@ -498,19 +498,20 @@ int _getopt_internal (int argc,
              we must advance to the next element now.  */
           optind++;
         }
-        else
+        else {
           if (optind == argc) {
             if (opterr)
               printf ("%s: option `-%c' requires an argument\n",
                       argv[0], c);
             c = '?';
           }
-          else
+          else {
             /* We already incremented `optind' once;
-            increment it again when taking next ARGV-elt as argument.  */
-
-          optarg = argv[optind++];
-          nextchar = NULL;
+               increment it again when taking next ARGV-elt as argument */
+            optarg = argv[optind++];
+          }
+        }
+        nextchar = NULL;
       }
     }
 

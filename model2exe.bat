@@ -62,8 +62,8 @@
   @set "target_c=!targetDir!!targetName!.c"
   @set "target_exe=!targetDir!!targetName!.exe"
 
-  @if exist "%target_c%" (
-    @del "%target_c%"
+  @if exist "!target_c!" (
+    @del "!target_c!"
   )
 
   "%MOD%" "%target%" "!target_c!"

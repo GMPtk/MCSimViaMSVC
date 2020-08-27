@@ -104,119 +104,123 @@ int CalculateOneMCParm (PMCVAR pMCVar)
 
     default:
     case MCV_UNIFORM:
-      pMCVar->dVal = UniformRandom (dParm1, dParm2);
+      pMCVar->dVal = UniformRandom(dParm1, dParm2);
       break;
 
     case MCV_LOGUNIFORM:
-      pMCVar->dVal = LogUniformRandom (dParm1, dParm2);
+      pMCVar->dVal = LogUniformRandom(dParm1, dParm2);
       break;
 
     case MCV_BETA:
-      pMCVar->dVal = BetaRandom (dParm1, dParm2, dMin, dMax);
+      pMCVar->dVal = BetaRandom(dParm1, dParm2, dMin, dMax);
       break;
 
     case MCV_HALFNORMAL:
-      pMCVar->dVal = fabs(NormalRandom (dParm1, dParm2));
+      pMCVar->dVal = fabs(NormalRandom(dParm1, dParm2));
       break;
 
     case MCV_NORMAL:
-      pMCVar->dVal = NormalRandom (dParm1, dParm2);
+      pMCVar->dVal = NormalRandom(dParm1, dParm2);
       break;
 
     case MCV_NORMALCV:
-      pMCVar->dVal = NormalRandom (dParm1, fabs(dParm1 * dParm2));
+      pMCVar->dVal = NormalRandom(dParm1, fabs(dParm1 * dParm2));
       break;
 
     case MCV_NORMALV:
-      pMCVar->dVal = NormalRandom (dParm1, sqrt (dParm2));
+      pMCVar->dVal = NormalRandom(dParm1, sqrt(dParm2));
       break;
 
     case MCV_TRUNCNORMAL:
-      pMCVar->dVal = TruncNormalRandom (dParm1, dParm2, dMin, dMax);
+      pMCVar->dVal = TruncNormalRandom(dParm1, dParm2, dMin, dMax);
       break;
 
     case MCV_TRUNCNORMALCV:
-      pMCVar->dVal = TruncNormalRandom (dParm1, fabs(dParm1 * dParm2),
-                                        dMin, dMax);
+      pMCVar->dVal = TruncNormalRandom(dParm1, fabs(dParm1 * dParm2),
+                                       dMin, dMax);
       break;
 
     case MCV_TRUNCNORMALV:
-      pMCVar->dVal = TruncNormalRandom (dParm1, sqrt (dParm2), dMin, dMax);
+      pMCVar->dVal = TruncNormalRandom(dParm1, sqrt(dParm2), dMin, dMax);
       break;
 
     case MCV_LOGNORMAL:
-      pMCVar->dVal = LogNormalRandom (dParm1, dParm2);
+      pMCVar->dVal = LogNormalRandom(dParm1, dParm2);
       break;
 
     case MCV_TRUNCLOGNORMAL:
-      pMCVar->dVal = TruncLogNormalRandom (dParm1, dParm2, dMin, dMax);
+      pMCVar->dVal = TruncLogNormalRandom(dParm1, dParm2, dMin, dMax);
       break;
 
     case MCV_LOGNORMALV:
-      pMCVar->dVal = LogNormalRandom (dParm1, exp(sqrt(dParm2)));
+      pMCVar->dVal = LogNormalRandom(dParm1, exp(sqrt(dParm2)));
       break;
 
     case MCV_TRUNCLOGNORMALV:
-      pMCVar->dVal = TruncLogNormalRandom (dParm1, exp(sqrt(dParm2)),
-                                           dMin, dMax);
+      pMCVar->dVal = TruncLogNormalRandom(dParm1, exp(sqrt(dParm2)),
+                                          dMin, dMax);
       break;
 
     case MCV_CHI2:
-      pMCVar->dVal = Chi2Random (dParm1);
+      pMCVar->dVal = Chi2Random(dParm1);
       break;
 
     case MCV_BINOMIAL:
-      pMCVar->dVal = BinomialRandom (dParm1, (long) dParm2);
+      pMCVar->dVal = BinomialRandom(dParm1, (long) dParm2);
       break;
 
     case MCV_PIECEWISE:
-      pMCVar->dVal = PiecewiseRandom (dMin, dParm1, dParm2, dMax);
+      pMCVar->dVal = PiecewiseRandom(dMin, dParm1, dParm2, dMax);
       break;
 
     case MCV_EXPONENTIAL:
-      pMCVar->dVal = ExpRandom (dParm1);
+      pMCVar->dVal = ExpRandom(dParm1);
       break;
 
     case MCV_GGAMMA:
-      pMCVar->dVal = GGammaRandom (dParm1, dParm2);
+      pMCVar->dVal = GGammaRandom(dParm1, dParm2);
       break;
 
     case MCV_INVGGAMMA:
-      pMCVar->dVal = InvGGammaRandom (dParm1, dParm2);
+      pMCVar->dVal = InvGGammaRandom(dParm1, dParm2);
       break;
 
     case MCV_TRUNCINVGGAMMA:
-      pMCVar->dVal = TruncInvGGammaRandom (dParm1, dParm2, dMin, dMax);
+      pMCVar->dVal = TruncInvGGammaRandom(dParm1, dParm2, dMin, dMax);
       break;
 
     case MCV_POISSON:
-      pMCVar->dVal = PoissonRandom (dParm1);
+      pMCVar->dVal = PoissonRandom(dParm1);
       break;
 
     case MCV_BINOMIALBETA: /* dMin is in fact beta */
-      pMCVar->dVal = BinomialBetaRandom (dParm1, dParm2, dMin);
+      pMCVar->dVal = BinomialBetaRandom(dParm1, dParm2, dMin);
       break;
 
     case MCV_GENLOGNORMAL: /* dMin is in fact stdevlognorm */
-      pMCVar->dVal = GenLogNormalRandom (dParm1, dParm2, dMin);
+      pMCVar->dVal = GenLogNormalRandom(dParm1, dParm2, dMin);
       break;
 
     case MCV_STUDENTT: /* dMin is in fact the scale parameter */
-      pMCVar->dVal = StudentTRandom (dParm1, dParm2, dMin);
+      pMCVar->dVal = StudentTRandom(dParm1, dParm2, dMin);
       break;
 
     case MCV_CAUCHY:
-      pMCVar->dVal = CauchyRandom (dParm1);
+      pMCVar->dVal = CauchyRandom(dParm1);
       break;
 
     case MCV_HALFCAUCHY:
-      pMCVar->dVal = fabs(CauchyRandom (dParm1));
+      pMCVar->dVal = fabs(CauchyRandom(dParm1));
       break;
 
     case MCV_USERLL: /* not allowed for straight Monte Carlo simulations */
       ReportError (NULL, RE_BADCONTEXT | RE_FATAL, "UserSpecifiedLL", NULL);
       break;
-      
+
+    case MCV_NEGATIVEBINOM:
+      pMCVar->dVal = NegativeBinomialRandom(dParm1, dParm2);
+      break;
+
   } /* switch */
 
   return 0;

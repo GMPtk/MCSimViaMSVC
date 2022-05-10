@@ -5,9 +5,20 @@
 @set target=%~1
 
 @set vcvars=
-@set vsver=2019
 @set platform=32
+
+@set vsver=2019
 @set "vsdir=%ProgramFiles(x86)%\Microsoft Visual Studio\%vsver%"
+
+@for /D %%M in ("%vsdir%\*") do @(
+  @if exist "%%M\VC\Auxiliary\Build\vcvars%platform%.bat" (
+    @set "vcvars=%%M\VC\Auxiliary\Build\vcvars%platform%.bat"
+    goto use_vcvars
+  )
+)
+
+@set vsver=2022
+@set "vsdir=%ProgramFiles%\Microsoft Visual Studio\%vsver%"
 
 @for /D %%M in ("%vsdir%\*") do @(
   @if exist "%%M\VC\Auxiliary\Build\vcvars%platform%.bat" (
